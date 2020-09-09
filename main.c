@@ -32,6 +32,7 @@
 #include "ble_srv_brux.h"
 #include "app_mpu.h"
 
+#define teste
 #define APP_BLE_CONN_CFG_TAG		1
 
 #define DEVICE_NAME                     "BRUXISMO"                       /**< Name of device. Will be included in the advertising data. */
