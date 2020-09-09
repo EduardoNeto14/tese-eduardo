@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "nordic_common.h"
+#include "nrf_drv_saadc.h"
+#include "nrf_drv_timer.h"
 #include "nrf.h"
 #include "app_error.h"
 #include "ble.h"
@@ -24,6 +26,10 @@
 #include "nrf_ble_qwr.h"
 #include "nrf_pwr_mgmt.h"
 #include "nrf_drv_twi.h"
+#include "nrf_drv_rtc.h"
+#include "nrf_drv_clock.h"
+#include "nrf_nvmc.h"
+#include "nrf_drv_power.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -32,7 +38,6 @@
 #include "ble_srv_brux.h"
 #include "app_mpu.h"
 
-#define teste
 #define APP_BLE_CONN_CFG_TAG		1
 
 #define DEVICE_NAME                     "BRUXISMO"                       /**< Name of device. Will be included in the advertising data. */
@@ -67,6 +72,30 @@
 
 #define OPCODE_LENGTH			1
 #define HANDLE_LENGTH			2
+
+#define RTC_FREQUENCY                   32                                        //Determines the RTC frequency and prescaler
+#define RTC_CC_VALUE                    8                                         //Determines the RTC interrupt frequency and thereby the SAADC sampling frequency
+#define SAADC_SAMPLE_INTERVAL_MS        1000                                       //Interval in milliseconds at which RTC times out and triggers SAADC sample task (
+#define SAADC_CALIBRATION_INTERVAL      5                                         //Determines how often the SAADC should be calibrated relative to NRF_DRV_SAADC_EVT_DONE event. E.g. value 5 will make the SAADC calibrate every fifth time the NRF_DRV_SAADC_EVT_DONE is received.
+#define SAADC_SAMPLES_IN_BUFFER         1                                         //Number of SAADC samples in RAM before returning a SAADC event. For low power SAADC set this constant to 1. Otherwise the EasyDMA will be enabled for an extended time which consumes high current.
+#define SAADC_OVERSAMPLE                NRF_SAADC_OVERSAMPLE_DISABLED             //Oversampling setting for the SAADC. Setting oversample to 4x This will make the SAADC output a single averaged value when the SAMPLE task is triggered 4 times. Enable BURST mode to make the SAADC sample 4 times when triggering SAMPLE task once.
+#define SAADC_BURST_MODE                0                                         //Set to 1 to enable BURST mode, otherwise set to 0.
+
+#define SAMPLE_BUFFER                   2                                         //Buffer length for SAADC samples
+#define PAGE_ADDR                       0x0007f000
+#define END_PAGE                        0x00080000
+
+static nrf_saadc_value_t       m_buffer_pool[2][SAMPLE_BUFFER];
+const  nrf_drv_rtc_t           rtc = NRF_DRV_RTC_INSTANCE(2);                     /**< Declaring an instance of nrf_drv_rtc for RTC2. */
+static uint32_t                rtc_ticks = RTC_US_TO_TICKS(SAADC_SAMPLE_INTERVAL_MS*1000, RTC_FREQUENCY);
+static uint32_t                m_adc_evt_counter = 0;
+static bool                    m_saadc_initialized = false;
+static bool                    limit_exceeded = false;
+static uint8_t                 samples_not_exceeded = 20;
+static int32_t                 *current_addr = (int32_t *) PAGE_ADDR;
+
+void saadc_init(void);
+void saadc_callback(nrf_drv_saadc_evt_t const *p_event);
 
 BLE_BRUX_DEF(m_brux);
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
@@ -355,8 +384,170 @@ static void application_timers_start(void)
 
 }
 
+static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
+{
+    ret_code_t err_code;
+	
+    if (int_type == NRF_DRV_RTC_INT_COMPARE0)
+    {
+        if(!m_saadc_initialized)
+        {
+            saadc_init();                                              //Initialize the SAADC. In the case when SAADC_SAMPLES_IN_BUFFER > 1 then we only need to initialize the SAADC when the the buffer is empty.
+        }
+        m_saadc_initialized = true;                                    //Set SAADC as initialized
+        
+        nrf_drv_saadc_sample();                                        //Trigger the SAADC SAMPLE task
+			
+        err_code = nrf_drv_rtc_cc_set(&rtc, 0, rtc_ticks, true);       //Set RTC compare value. This needs to be done every time as the nrf_drv_rtc clears the compare register on every compare match
+        APP_ERROR_CHECK(err_code);
+        nrf_drv_rtc_counter_clear(&rtc);                               //Clear the RTC counter to start count from zero
+    }
+}
 
-/**@brief Function for putting the chip into sleep mode.
+static void lfclk_config(void)
+{
+    ret_code_t err_code = nrf_drv_clock_init();                        //Initialize the clock source specified in the nrf_drv_config.h file, i.e. the CLOCK_CONFIG_LF_SRC constant
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_clock_lfclk_request(NULL);
+}
+
+static void rtc_config(void)
+{
+
+    uint32_t err_code;
+
+    //Initialize RTC instance
+    nrf_drv_rtc_config_t rtc_config;
+    rtc_config.prescaler = RTC_FREQ_TO_PRESCALER(RTC_FREQUENCY);
+    err_code = nrf_drv_rtc_init(&rtc, &rtc_config, rtc_handler);                //Initialize the RTC with callback function rtc_handler. The rtc_handler must be implemented in this applicaiton. Passing NULL here for RTC configuration means that configuration will be taken from the sdk_config.h file.
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_drv_rtc_cc_set(&rtc, 0, rtc_ticks, true);                    //Set RTC compare value to trigger interrupt. Configure the interrupt frequency by adjust RTC_CC_VALUE and RTC_FREQUENCY constant in top of main.c
+    APP_ERROR_CHECK(err_code);
+
+    //Power on RTC instance
+    nrf_drv_rtc_enable(&rtc);                                                   //Enable RTC
+}
+
+/**
+ * @brief Função de inicialização do módulo SAADC
+ * */
+void saadc_init()
+{
+    ret_code_t err_code;
+    nrf_drv_saadc_config_t saadc_config;
+    nrf_saadc_channel_config_t channel_config;
+    
+    saadc_config.low_power_mode = true;                         //Enable low power mode
+    saadc_config.resolution = NRF_SAADC_RESOLUTION_12BIT;       //Set SAADC resolution to 12 bits
+    saadc_config.oversample = SAADC_OVERSAMPLE;
+    saadc_config.interrupt_priority = APP_IRQ_PRIORITY_LOW;              
+    
+    err_code = nrf_drv_saadc_init(&saadc_config, saadc_callback);
+    APP_ERROR_CHECK(err_code);
+
+    channel_config.reference = NRF_SAADC_REFERENCE_INTERNAL;
+    channel_config.gain = NRF_SAADC_GAIN1_5;
+    channel_config.acq_time = NRF_SAADC_ACQTIME_10US;
+    channel_config.mode = NRF_SAADC_MODE_SINGLE_ENDED;
+
+    if(SAADC_BURST_MODE)        channel_config.burst = NRF_SAADC_BURST_ENABLED;
+
+    channel_config.pin_p = NRF_SAADC_INPUT_AIN0;
+    channel_config.pin_n = NRF_SAADC_INPUT_DISABLED;
+    channel_config.resistor_p = NRF_SAADC_RESISTOR_DISABLED;
+    channel_config.resistor_n = NRF_SAADC_RESISTOR_DISABLED;
+
+    nrfx_saadc_limits_set(0, NRF_DRV_SAADC_LIMITL_DISABLED, 250);
+    err_code = nrfx_saadc_channel_init(0, &channel_config);
+    APP_ERROR_CHECK(err_code);
+
+    channel_config.pin_p = NRF_SAADC_INPUT_AIN1;
+    nrfx_saadc_limits_set(1, NRF_DRV_SAADC_LIMITL_DISABLED, 400);
+    
+    err_code = nrfx_saadc_channel_init(1, &channel_config);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrfx_saadc_buffer_convert(m_buffer_pool[0], SAMPLE_BUFFER);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrfx_saadc_buffer_convert(m_buffer_pool[1], SAMPLE_BUFFER);
+    APP_ERROR_CHECK(err_code);
+}
+
+/**
+ * @brief Esta função será chamada sempre que algum evento for registado
+ * pelo módulo SAADC
+ * */
+void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
+{
+    ret_code_t err_code;
+    static bool event_done = false;
+    static int16_t sensor1, sensor2;
+    
+    if (p_event->type == NRFX_SAADC_EVT_DONE)
+    {
+        if ((m_adc_evt_counter % SAADC_CALIBRATION_INTERVAL) == 0)               // Evaluate if offset calibration should be performed. Configure the SAADC_CALIBRATION_INTERVAL constant to change the calibration frequency
+        {
+            NRF_SAADC->EVENTS_CALIBRATEDONE = 0;                                                        // Clear the calibration event flag
+            nrf_saadc_task_trigger(NRF_SAADC_TASK_CALIBRATEOFFSET);                                     // Trigger calibration task
+            while(!NRF_SAADC->EVENTS_CALIBRATEDONE);                                                    // Wait until calibration task is completed. The calibration tasks takes about 1000us with 10us acquisition time. Configuring shorter or longer acquisition time will make the calibration take shorter or longer respectively.
+            while(NRF_SAADC->STATUS == (SAADC_STATUS_STATUS_Busy << SAADC_STATUS_STATUS_Pos));          // Set flag to trigger calibration in main context when SAADC is stopped
+        }
+        
+        NRF_LOG_INFO("ADC event number: %d\r\n",(int)m_adc_evt_counter);        // Print the event number on UART
+        
+        err_code = nrfx_saadc_buffer_convert(p_event->data.done.p_buffer, SAMPLE_BUFFER);
+        APP_ERROR_CHECK(err_code);
+
+        sensor1 = p_event->data.done.p_buffer[0];
+        sensor2 = p_event->data.done.p_buffer[1];
+        
+        /*for (uint8_t i = 0 ; i < SAMPLE_BUFFER; i++)
+        {
+            NRF_LOG_INFO("Value: %d\n", p_event->data.done.p_buffer[i]);
+        }*/
+        NRF_LOG_INFO("Ei\r\n");
+        m_adc_evt_counter++;                                                             
+        event_done = true;
+    }
+
+    if (p_event->type == NRF_DRV_SAADC_EVT_LIMIT)
+    {
+        NRF_LOG_INFO("YEEEES\r\n");
+        limit_exceeded = true;
+    }
+
+    if (!limit_exceeded && event_done) {
+        if (!samples_not_exceeded) {NRF_LOG_INFO("Stop advertising..\r\n");}
+        else {samples_not_exceeded--;}
+    }
+    else if (limit_exceeded && event_done){
+        NRF_LOG_INFO("Value: %d\n", sensor1);
+        NRF_LOG_INFO("Value: %d\n", sensor2);
+        
+        nrf_nvmc_write_word((int32_t) current_addr++, (int32_t) (sensor1 << 16 | sensor2));
+        
+        NRF_LOG_INFO("Stored Value: %d in %x\n", *(current_addr - 1), (current_addr - 1));
+        
+        if (current_addr == (int32_t *) END_PAGE) {
+            current_addr = (int32_t *) PAGE_ADDR;
+            nrf_nvmc_page_erase((int32_t) PAGE_ADDR);
+        }
+        
+        limit_exceeded = false;
+        samples_not_exceeded = 20;
+        event_done = false;
+    }
+
+    nrf_drv_saadc_uninit();                                                                   // Unintialize SAADC to disable EasyDMA and save power
+    NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
+    NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
+    m_saadc_initialized = false;                                                              // Set SAADC as uninitialized
+}
+
+/**
+ * @brief Function for putting the chip into sleep mode.
  *
  * @note This function will not return.
  */
@@ -636,30 +827,45 @@ int main(void)
 {
     bool erase_bonds;
 
+    /*  Utiliza o regulador DC/DC interno (melhor consumo energético) */
+    NRF_POWER->DCDCEN = 1;
+
+    nrf_nvmc_page_erase((uint32_t) PAGE_ADDR);
     // Initialize.
     log_init();
-    NRF_LOG_INFO("LOGS");
+    //NRF_LOG_INFO("LOGS");
+    
     timers_init();
-    NRF_LOG_INFO("TIMERS");
+    //NRF_LOG_INFO("TIMERS");
+    
     buttons_leds_init(&erase_bonds);
-    NRF_LOG_INFO("BUTTONS");
+    //NRF_LOG_INFO("BUTTONS");
+    
     power_management_init();
-    NRF_LOG_INFO("POWER");
+    //NRF_LOG_INFO("POWER");
+    
     ble_stack_init();
-    NRF_LOG_INFO("STACK");
+    //NRF_LOG_INFO("STACK");
+    
     gap_params_init();
-    NRF_LOG_INFO("PARAMS");
+    //NRF_LOG_INFO("PARAMS");
+    
     gatt_init();
-    NRF_LOG_INFO("GATT INIT");
+    //NRF_LOG_INFO("GATT INIT");
+    
     services_init();
-    NRF_LOG_INFO("SERVICES");
+    //NRF_LOG_INFO("SERVICES");
+    
     advertising_init();
-    NRF_LOG_INFO("ADV");
+    //NRF_LOG_INFO("ADV");
+    
     conn_params_init();
-    NRF_LOG_INFO("CONN PARAMS");
+    //NRF_LOG_INFO("CONN PARAMS");
 
     // Start execution.
-    NRF_LOG_INFO("Template example started.");
+    //NRF_LOG_INFO("Template example started.");
+    lfclk_config();                                  // Configure low frequency 32kHz clock
+    rtc_config();                                    // Configure RTC. The RTC will generate periodic interrupts. Requires 32kHz clock to operate.
     application_timers_start();
 
     advertising_start(erase_bonds);
@@ -667,14 +873,11 @@ int main(void)
     twi_init();
 
     MPU6050_set_mode();
+
     // Enter main loop.
     for (;;)
     {
         idle_state_handle();
+        NRF_LOG_FLUSH();
     }
 }
-
-
-/**
- * @}
- */
