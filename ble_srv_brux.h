@@ -45,8 +45,8 @@ typedef void (*ble_brux_evt_handler_t) (ble_brux_t * p_bas, ble_brux_evt_t * p_e
 
 typedef struct
 {
-	ble_brux_evt_handler_t		evt_handler;	
-	uint8_t				initial_brux_value;
+	ble_brux_evt_handler_t			evt_handler;	
+	uint8_t							initial_brux_value;
 	ble_srv_cccd_security_mode_t	custom_value_char_attr_md;
 } ble_brux_init_t;
 

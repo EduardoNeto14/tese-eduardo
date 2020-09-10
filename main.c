@@ -38,7 +38,7 @@
 #include "ble_srv_brux.h"
 #include "app_mpu.h"
 
-#define APP_BLE_CONN_CFG_TAG		1
+#define APP_BLE_CONN_CFG_TAG		    1
 
 #define DEVICE_NAME                     "BRUXISMO"                       /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "EDUARDO"                   /**< Manufacturer. Will be passed to Device Information Service. */
@@ -70,8 +70,8 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-#define OPCODE_LENGTH			1
-#define HANDLE_LENGTH			2
+#define OPCODE_LENGTH			        1
+#define HANDLE_LENGTH			        2
 
 #define RTC_FREQUENCY                   32                                        //Determines the RTC frequency and prescaler
 #define RTC_CC_VALUE                    8                                         //Determines the RTC interrupt frequency and thereby the SAADC sampling frequency
@@ -92,7 +92,6 @@ static uint32_t                m_adc_evt_counter = 0;
 static bool                    m_saadc_initialized = false;
 static bool                    limit_exceeded = false;
 static uint8_t                 samples_not_exceeded = 20;
-static int32_t                 *current_addr = (int32_t *) PAGE_ADDR;
 
 void saadc_init(void);
 void saadc_callback(nrf_drv_saadc_evt_t const *p_event);
@@ -303,16 +302,20 @@ static void services_init(void)
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
     APP_ERROR_CHECK(err_code);
     
-    NRF_LOG_INFO("QWR");
+    //NRF_LOG_INFO("QWR");
     
     memset(&brux_init, 0, sizeof(brux_init));
-    NRF_LOG_INFO("MEMSET");
+    
+    //NRF_LOG_INFO("MEMSET");
+    
     brux_init.evt_handler	= on_brux_evt;
 
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&brux_init.custom_value_char_attr_md.cccd_write_perm);
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&brux_init.custom_value_char_attr_md.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&brux_init.custom_value_char_attr_md.write_perm);
-    NRF_LOG_INFO("ANTES INIT");
+    
+    //NRF_LOG_INFO("ANTES INIT");
+    
     err_code = ble_brux_init(&m_brux, &brux_init);
     APP_ERROR_CHECK(err_code);
 }
@@ -404,12 +407,12 @@ static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
     }
 }
 
-static void lfclk_config(void)
+/*static void lfclk_config(void)
 {
     ret_code_t err_code = nrf_drv_clock_init();                        //Initialize the clock source specified in the nrf_drv_config.h file, i.e. the CLOCK_CONFIG_LF_SRC constant
     APP_ERROR_CHECK(err_code);
     nrf_drv_clock_lfclk_request(NULL);
-}
+}*/
 
 static void rtc_config(void)
 {
@@ -482,7 +485,6 @@ void saadc_init()
 void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
 {
     ret_code_t err_code;
-    static bool event_done = false;
     static int16_t sensor1, sensor2;
     
     if (p_event->type == NRFX_SAADC_EVT_DONE)
@@ -509,7 +511,23 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         }*/
         NRF_LOG_INFO("Ei\r\n");
         m_adc_evt_counter++;                                                             
-        event_done = true;
+
+        if (!limit_exceeded) {
+            if (!samples_not_exceeded) {NRF_LOG_INFO("Stop advertising..\r\n");}
+            else {samples_not_exceeded--;}
+        }
+        else if (limit_exceeded){
+            NRF_LOG_INFO("Value: %d\n", sensor1);
+            NRF_LOG_INFO("Value: %d\n", sensor2);
+            
+            limit_exceeded = false;
+            samples_not_exceeded = 20;
+        }
+
+        nrf_drv_saadc_uninit();                                                                   // Unintialize SAADC to disable EasyDMA and save power
+        NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
+        NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
+        m_saadc_initialized = false;                                                              // Set SAADC as uninitialized
     }
 
     if (p_event->type == NRF_DRV_SAADC_EVT_LIMIT)
@@ -517,35 +535,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         NRF_LOG_INFO("YEEEES\r\n");
         limit_exceeded = true;
     }
-
-    if (!limit_exceeded && event_done) {
-        if (!samples_not_exceeded) {NRF_LOG_INFO("Stop advertising..\r\n");}
-        else {samples_not_exceeded--;}
-    }
-    else if (limit_exceeded && event_done){
-        NRF_LOG_INFO("Value: %d\n", sensor1);
-        NRF_LOG_INFO("Value: %d\n", sensor2);
-        
-        nrf_nvmc_write_word((int32_t) current_addr++, (int32_t) (sensor1 << 16 | sensor2));
-        
-        NRF_LOG_INFO("Stored Value: %d in %x\n", *(current_addr - 1), (current_addr - 1));
-        
-        if (current_addr == (int32_t *) END_PAGE) {
-            current_addr = (int32_t *) PAGE_ADDR;
-            nrf_nvmc_page_erase((int32_t) PAGE_ADDR);
-        }
-        
-        limit_exceeded = false;
-        samples_not_exceeded = 20;
-        event_done = false;
-    }
-
-    nrf_drv_saadc_uninit();                                                                   // Unintialize SAADC to disable EasyDMA and save power
-    NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
-    NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
-    m_saadc_initialized = false;                                                              // Set SAADC as uninitialized
 }
-
 /**
  * @brief Function for putting the chip into sleep mode.
  *
@@ -566,7 +556,6 @@ static void sleep_mode_enter(void)
     err_code = sd_power_system_off();
     APP_ERROR_CHECK(err_code);
 }
-
 
 /**@brief Function for handling advertising events.
  *
@@ -830,7 +819,6 @@ int main(void)
     /*  Utiliza o regulador DC/DC interno (melhor consumo energético) */
     NRF_POWER->DCDCEN = 1;
 
-    nrf_nvmc_page_erase((uint32_t) PAGE_ADDR);
     // Initialize.
     log_init();
     //NRF_LOG_INFO("LOGS");
@@ -854,19 +842,25 @@ int main(void)
     //NRF_LOG_INFO("GATT INIT");
     
     services_init();
-    //NRF_LOG_INFO("SERVICES");
+    NRF_LOG_INFO("SERVICES");
     
     advertising_init();
-    //NRF_LOG_INFO("ADV");
+    NRF_LOG_INFO("ADV");
     
     conn_params_init();
-    //NRF_LOG_INFO("CONN PARAMS");
+    NRF_LOG_INFO("CONN PARAMS");
 
     // Start execution.
-    //NRF_LOG_INFO("Template example started.");
-    lfclk_config();                                  // Configure low frequency 32kHz clock
+    NRF_LOG_INFO("Template example started.");
+    
+    //lfclk_config();                                  // Configure low frequency 32kHz clock
+    //NRF_LOG_INFO("lfcll");
+    
     rtc_config();                                    // Configure RTC. The RTC will generate periodic interrupts. Requires 32kHz clock to operate.
+    NRF_LOG_INFO("rtc");
+    
     application_timers_start();
+    NRF_LOG_INFO("application timers");
 
     advertising_start(erase_bonds);
 
