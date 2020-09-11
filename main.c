@@ -38,6 +38,7 @@
 #include "ble_srv_brux.h"
 #include "app_mpu.h"
 
+#define DEBUG
 #define APP_BLE_CONN_CFG_TAG		    1
 
 #define DEVICE_NAME                     "BRUXISMO"                       /**< Name of device. Will be included in the advertising data. */
@@ -85,16 +86,40 @@
 #define PAGE_ADDR                       0x0007f000
 #define END_PAGE                        0x00080000
 
+typedef enum {
+    DEVICE_IS_ADVERTISING,
+    DEVICE_IS_CONNECTED,
+    DEVICE_IS_IDLE,
+    DEVICE_IS_STOPPING_ADV,
+    DEVICE_IS_DISCONNECTING,
+    DEVICE_WAS_DISCONNECTED
+} device_status_t;
+
+typedef struct saadc
+{
+    bool m_saadc_initialized;
+    bool limit_exceeded;
+    uint8_t samples_not_exceeded;
+    uint32_t m_adc_evt_counter;
+} saadc_status_t;
+
+static saadc_status_t          saadc_status  = {false, false, 20, 0};
+static device_status_t         device_status = DEVICE_IS_IDLE;
+
 static nrf_saadc_value_t       m_buffer_pool[2][SAMPLE_BUFFER];
 const  nrf_drv_rtc_t           rtc = NRF_DRV_RTC_INSTANCE(2);                     /**< Declaring an instance of nrf_drv_rtc for RTC2. */
 static uint32_t                rtc_ticks = RTC_US_TO_TICKS(SAADC_SAMPLE_INTERVAL_MS*1000, RTC_FREQUENCY);
-static uint32_t                m_adc_evt_counter = 0;
-static bool                    m_saadc_initialized = false;
-static bool                    limit_exceeded = false;
-static uint8_t                 samples_not_exceeded = 20;
+
+//static uint32_t                m_adc_evt_counter = 0;
+//static volatile bool           m_saadc_initialized = false;
+//static volatile bool           limit_exceeded = false;
+//static volatile bool            stop_advertising = false;
+//static uint8_t                 samples_not_exceeded = 20;
+//static volatile bool            is_advertising = false;
 
 void saadc_init(void);
 void saadc_callback(nrf_drv_saadc_evt_t const *p_event);
+static void advertising_start(bool erase_bonds);
 
 BLE_BRUX_DEF(m_brux);
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
@@ -107,6 +132,7 @@ APP_TIMER_DEF(m_gyro_notification);
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 static uint16_t	m_ble_brux_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;
+
 // YOUR_JOB: Use UUIDs for service(s) used in your application.
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
@@ -169,13 +195,7 @@ static void timers_init(void)
 
     err_code = app_timer_create(&m_gyro_notification, APP_TIMER_MODE_REPEATED, notification_gyro_timeout_handler);
     APP_ERROR_CHECK(err_code);
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       ret_code_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
+    
 }
 
 /**@brief Function for the GAP initialization.
@@ -393,14 +413,16 @@ static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
 	
     if (int_type == NRF_DRV_RTC_INT_COMPARE0)
     {
-        if(!m_saadc_initialized)
+        
+        if(!saadc_status.m_saadc_initialized)
         {
             saadc_init();                                              //Initialize the SAADC. In the case when SAADC_SAMPLES_IN_BUFFER > 1 then we only need to initialize the SAADC when the the buffer is empty.
         }
-        m_saadc_initialized = true;                                    //Set SAADC as initialized
+        saadc_status.m_saadc_initialized = true;                                    //Set SAADC as initialized
         
         nrf_drv_saadc_sample();                                        //Trigger the SAADC SAMPLE task
-			
+		
+        /*    */
         err_code = nrf_drv_rtc_cc_set(&rtc, 0, rtc_ticks, true);       //Set RTC compare value. This needs to be done every time as the nrf_drv_rtc clears the compare register on every compare match
         APP_ERROR_CHECK(err_code);
         nrf_drv_rtc_counter_clear(&rtc);                               //Clear the RTC counter to start count from zero
@@ -466,7 +488,7 @@ void saadc_init()
     APP_ERROR_CHECK(err_code);
 
     channel_config.pin_p = NRF_SAADC_INPUT_AIN1;
-    nrfx_saadc_limits_set(1, NRF_DRV_SAADC_LIMITL_DISABLED, 400);
+    nrfx_saadc_limits_set(1, NRF_DRV_SAADC_LIMITL_DISABLED, 425);
     
     err_code = nrfx_saadc_channel_init(1, &channel_config);
     APP_ERROR_CHECK(err_code);
@@ -489,7 +511,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
     
     if (p_event->type == NRFX_SAADC_EVT_DONE)
     {
-        if ((m_adc_evt_counter % SAADC_CALIBRATION_INTERVAL) == 0)               // Evaluate if offset calibration should be performed. Configure the SAADC_CALIBRATION_INTERVAL constant to change the calibration frequency
+        if ((saadc_status.m_adc_evt_counter % SAADC_CALIBRATION_INTERVAL) == 0)                         // Evaluate if offset calibration should be performed. Configure the SAADC_CALIBRATION_INTERVAL constant to change the calibration frequency
         {
             NRF_SAADC->EVENTS_CALIBRATEDONE = 0;                                                        // Clear the calibration event flag
             nrf_saadc_task_trigger(NRF_SAADC_TASK_CALIBRATEOFFSET);                                     // Trigger calibration task
@@ -497,7 +519,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
             while(NRF_SAADC->STATUS == (SAADC_STATUS_STATUS_Busy << SAADC_STATUS_STATUS_Pos));          // Set flag to trigger calibration in main context when SAADC is stopped
         }
         
-        NRF_LOG_INFO("ADC event number: %d\r\n",(int)m_adc_evt_counter);        // Print the event number on UART
+        NRF_LOG_INFO("ADC event number: %d\r\n",(int)saadc_status.m_adc_evt_counter++);        // Print the event number on UART
         
         err_code = nrfx_saadc_buffer_convert(p_event->data.done.p_buffer, SAMPLE_BUFFER);
         APP_ERROR_CHECK(err_code);
@@ -505,35 +527,36 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         sensor1 = p_event->data.done.p_buffer[0];
         sensor2 = p_event->data.done.p_buffer[1];
         
-        /*for (uint8_t i = 0 ; i < SAMPLE_BUFFER; i++)
-        {
-            NRF_LOG_INFO("Value: %d\n", p_event->data.done.p_buffer[i]);
-        }*/
-        NRF_LOG_INFO("Ei\r\n");
-        m_adc_evt_counter++;                                                             
-
-        if (!limit_exceeded) {
-            if (!samples_not_exceeded) {NRF_LOG_INFO("Stop advertising..\r\n");}
-            else {samples_not_exceeded--;}
+        if (!saadc_status.limit_exceeded) {
+            if (!saadc_status.samples_not_exceeded && device_status != DEVICE_IS_IDLE) {
+                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_DISCONNECTING * (device_status == DEVICE_IS_CONNECTED);
+            }
+            else if (saadc_status.samples_not_exceeded)      {saadc_status.samples_not_exceeded--;}
         }
-        else if (limit_exceeded){
+        else if (saadc_status.limit_exceeded){
             NRF_LOG_INFO("Value: %d\n", sensor1);
             NRF_LOG_INFO("Value: %d\n", sensor2);
             
-            limit_exceeded = false;
-            samples_not_exceeded = 20;
+            if (device_status == DEVICE_IS_IDLE) {
+                bool erase_bonds;
+                advertising_start(erase_bonds);
+                device_status = DEVICE_IS_ADVERTISING;
+            }
+
+            saadc_status.limit_exceeded = false;
+            saadc_status.samples_not_exceeded = 20;
         }
 
         nrf_drv_saadc_uninit();                                                                   // Unintialize SAADC to disable EasyDMA and save power
         NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
         NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
-        m_saadc_initialized = false;                                                              // Set SAADC as uninitialized
+        saadc_status.m_saadc_initialized = false;                                                 // Set SAADC as uninitialized
     }
 
     if (p_event->type == NRF_DRV_SAADC_EVT_LIMIT)
     {
         NRF_LOG_INFO("YEEEES\r\n");
-        limit_exceeded = true;
+        saadc_status.limit_exceeded = true;
     }
 }
 /**
@@ -541,7 +564,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
  *
  * @note This function will not return.
  */
-static void sleep_mode_enter(void)
+/*static void sleep_mode_enter(void)
 {
     ret_code_t err_code;
 
@@ -555,7 +578,7 @@ static void sleep_mode_enter(void)
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
     APP_ERROR_CHECK(err_code);
-}
+}*/
 
 /**@brief Function for handling advertising events.
  *
@@ -576,7 +599,10 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
             break;
 
         case BLE_ADV_EVT_IDLE:
-            sleep_mode_enter();
+            err_code = sd_ble_gap_adv_stop(m_advertising.adv_handle);
+            APP_ERROR_CHECK(err_code);
+            device_status = DEVICE_IS_IDLE;
+            //sleep_mode_enter();
             break;
 
         default:
@@ -599,7 +625,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected.");
             // LED indication will be changed when advertising starts.
-	    m_conn_handle = BLE_CONN_HANDLE_INVALID;
+	        device_status = DEVICE_IS_ADVERTISING;
+            m_conn_handle = BLE_CONN_HANDLE_INVALID;
             break;
 
         case BLE_GAP_EVT_CONNECTED:
@@ -609,6 +636,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+            device_status = DEVICE_IS_CONNECTED;
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -647,9 +675,13 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	case BLE_GATTS_EVT_SYS_ATTR_MISSING:
 	    err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
 	    APP_ERROR_CHECK(err_code);
-        default:
-            // No implementation needed.
-            break;
+    
+    //case BLE_GAP_EVT_ADV_SET_TERMINATED:
+    //    NRF_LOG_INFO("Event GAP occured\r\n");
+    //    break;
+    default:
+        //NRF_LOG_INFO("Teste\r\n");    // No implementation needed.
+        break;
     }
 }
 
@@ -690,7 +722,7 @@ static void bsp_event_handler(bsp_event_t event)
     switch (event)
     {
         case BSP_EVENT_SLEEP:
-            sleep_mode_enter();
+            //sleep_mode_enter();
             break; // BSP_EVENT_SLEEP
 
         case BSP_EVENT_DISCONNECT:
@@ -814,8 +846,8 @@ static void advertising_start(bool erase_bonds)
  */
 int main(void)
 {
+    ret_code_t err_code;
     bool erase_bonds;
-
     /*  Utiliza o regulador DC/DC interno (melhor consumo energético) */
     NRF_POWER->DCDCEN = 1;
 
@@ -862,16 +894,36 @@ int main(void)
     application_timers_start();
     NRF_LOG_INFO("application timers");
 
-    advertising_start(erase_bonds);
+    //advertising_start(erase_bonds);
 
-    twi_init();
+    //twi_init();
 
-    MPU6050_set_mode();
+    //MPU6050_set_mode();
 
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle();
+        if (device_status == DEVICE_IS_STOPPING_ADV || device_status == DEVICE_IS_DISCONNECTING) {
+            if (device_status == DEVICE_IS_DISCONNECTING) {
+                NRF_LOG_INFO("Disconnecting\r\n");
+                err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+            
+                if (err_code != NRF_ERROR_INVALID_STATE) {APP_ERROR_CHECK(err_code);}
+                device_status = DEVICE_IS_IDLE;
+                NRF_LOG_INFO("Success\r\n");
+            }
+            else {
+                NRF_LOG_INFO("Stop Adv\r\n");
+                err_code = sd_ble_gap_adv_stop(m_advertising.adv_handle);
+                APP_ERROR_CHECK(err_code);
+                device_status = DEVICE_IS_IDLE;
+                NRF_LOG_INFO("Success\r\n");
+            }
+        }
+        else {
+            idle_state_handle();
+        }
+                
         NRF_LOG_FLUSH();
     }
 }
