@@ -101,9 +101,10 @@ typedef struct saadc
     bool limit_exceeded;
     uint8_t samples_not_exceeded;
     uint32_t m_adc_evt_counter;
+    bool notification_enabled;
 } saadc_status_t;
 
-static saadc_status_t          saadc_status  = {false, false, 20, 0};
+static saadc_status_t          saadc_status  = {false, false, 20, 0, false};
 static device_status_t         device_status = DEVICE_IS_IDLE;
 
 static nrf_saadc_value_t       m_buffer_pool[2][SAMPLE_BUFFER];
@@ -299,13 +300,24 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
             APP_ERROR_CHECK(err_code);
             break;
 		
+        case BLE_BRUX_FORCE_NOTIFICATION_ENABLED:
+            saadc_status.notification_enabled = true;
+            
+            break;
+        
+        case BLE_BRUX_FORCE_NOTIFICATION_DISABLED:
+            saadc_status.notification_enabled = false;
+            
+            break;
+        
         case BLE_BRUX_EVT_CONNECTED:
 		    break;
 		
         case BLE_BRUX_EVT_DISCONNECTED:
 			break;
-	 	default:
-		break;
+	 	
+        default:
+		    break;
 	}
 }	
 
@@ -551,6 +563,11 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
         NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
         saadc_status.m_saadc_initialized = false;                                                 // Set SAADC as uninitialized
+
+        if (saadc_status.notification_enabled) {
+            int16_t sensor_values[] = {sensor1, sensor2};
+            ble_brux_force_update(&m_brux, sensor_values);
+        }
     }
 
     if (p_event->type == NRF_DRV_SAADC_EVT_LIMIT)

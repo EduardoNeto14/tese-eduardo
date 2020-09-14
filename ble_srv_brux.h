@@ -30,6 +30,8 @@ typedef enum
     BLE_BRUX_ACCEL_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
 	BLE_BRUX_GYRO_NOTIFICATION_ENABLED,                             /**< Custom value notification enabled event. */
     BLE_BRUX_GYRO_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
+	BLE_BRUX_FORCE_NOTIFICATION_ENABLED,                             /**< Custom value notification enabled event. */
+    BLE_BRUX_FORCE_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
     BLE_BRUX_EVT_DISCONNECTED,
     BLE_BRUX_EVT_CONNECTED
 } ble_brux_evt_type_t;
@@ -66,7 +68,7 @@ uint32_t ble_brux_init(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
 
 void ble_brux_on_ble_evt( ble_evt_t const * p_ble_evt, void * p_context);
 
-uint32_t ble_brux_force_update(ble_brux_t * p_brux, uint16_t force_value);
+uint32_t ble_brux_force_update(ble_brux_t * p_brux, int16_t * force_value);
 
 uint32_t ble_brux_accel_update(ble_brux_t * p_brux, uint8_t * accel_values);
 
