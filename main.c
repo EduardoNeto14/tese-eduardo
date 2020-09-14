@@ -111,13 +111,6 @@ static nrf_saadc_value_t       m_buffer_pool[2][SAMPLE_BUFFER];
 const  nrf_drv_rtc_t           rtc = NRF_DRV_RTC_INSTANCE(2);                     /**< Declaring an instance of nrf_drv_rtc for RTC2. */
 static uint32_t                rtc_ticks = RTC_US_TO_TICKS(SAADC_SAMPLE_INTERVAL_MS*1000, RTC_FREQUENCY);
 
-//static uint32_t                m_adc_evt_counter = 0;
-//static volatile bool           m_saadc_initialized = false;
-//static volatile bool           limit_exceeded = false;
-//static volatile bool            stop_advertising = false;
-//static uint8_t                 samples_not_exceeded = 20;
-//static volatile bool            is_advertising = false;
-
 void saadc_init(void);
 void saadc_callback(nrf_drv_saadc_evt_t const *p_event);
 static void advertising_start(bool erase_bonds);
