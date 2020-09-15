@@ -10993,7 +10993,7 @@ LOAD linker stubs
  .comment       0x00000000000000a7       0x5a /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
  .comment       0x00000000000000a7       0x5a /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/crtend.o
 
-.debug_line     0x0000000000000000    0x35afe
+.debug_line     0x0000000000000000    0x35af0
  .debug_line    0x0000000000000000       0x87 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
  .debug_line    0x0000000000000087       0x86 _build/nrf52832_xxaa/gcc_startup_nrf52.S.o
  .debug_line    0x000000000000010d      0xa60 _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
@@ -11033,38 +11033,38 @@ LOAD linker stubs
  .debug_line    0x0000000000020f7d     0x1d8e _build/nrf52832_xxaa/nrfx_uarte.c.o
  .debug_line    0x0000000000022d0b     0x11e7 _build/nrf52832_xxaa/bsp.c.o
  .debug_line    0x0000000000023ef2      0xa88 _build/nrf52832_xxaa/bsp_btn_ble.c.o
- .debug_line    0x000000000002497a     0x2480 _build/nrf52832_xxaa/main.c.o
- .debug_line    0x0000000000026dfa     0x1574 _build/nrf52832_xxaa/ble_srv_brux.c.o
- .debug_line    0x000000000002836e     0x2f16 _build/nrf52832_xxaa/SEGGER_RTT.c.o
- .debug_line    0x000000000002b284     0x1304 _build/nrf52832_xxaa/ble_advdata.c.o
- .debug_line    0x000000000002c588     0x1213 _build/nrf52832_xxaa/ble_advertising.c.o
- .debug_line    0x000000000002d79b      0xe0c _build/nrf52832_xxaa/ble_conn_params.c.o
- .debug_line    0x000000000002e5a7     0x112d _build/nrf52832_xxaa/ble_conn_state.c.o
- .debug_line    0x000000000002f6d4      0xa01 _build/nrf52832_xxaa/ble_srv_common.c.o
- .debug_line    0x00000000000300d5      0xc9d _build/nrf52832_xxaa/nrf_ble_gatt.c.o
- .debug_line    0x0000000000030d72      0x7e0 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
- .debug_line    0x0000000000031552      0xc1a _build/nrf52832_xxaa/ble_nus.c.o
- .debug_line    0x000000000003216c      0xfa4 _build/nrf52832_xxaa/nrf_sdh.c.o
- .debug_line    0x0000000000033110      0xb21 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
- .debug_line    0x0000000000033c31      0x741 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
- .debug_line    0x0000000000034372      0x14a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
- .debug_line    0x00000000000344bc      0x154 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
- .debug_line    0x0000000000034610      0x16c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
- .debug_line    0x000000000003477c       0xd7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
- .debug_line    0x0000000000034853       0xe3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
- .debug_line    0x0000000000034936      0x10d /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
- .debug_line    0x0000000000034a43       0xbe /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
- .debug_line    0x0000000000034b01      0x26b /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
- .debug_line    0x0000000000034d6c      0x149 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
- .debug_line    0x0000000000034eb5       0xaf /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
- .debug_line    0x0000000000034f64      0x228 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
- .debug_line    0x000000000003518c      0x22a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
- .debug_line    0x00000000000353b6       0x6e /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
- .debug_line    0x0000000000035424       0x60 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
- .debug_line    0x0000000000035484      0x61a /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
- .debug_line    0x0000000000035a9e       0x60 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
+ .debug_line    0x000000000002497a     0x2472 _build/nrf52832_xxaa/main.c.o
+ .debug_line    0x0000000000026dec     0x1574 _build/nrf52832_xxaa/ble_srv_brux.c.o
+ .debug_line    0x0000000000028360     0x2f16 _build/nrf52832_xxaa/SEGGER_RTT.c.o
+ .debug_line    0x000000000002b276     0x1304 _build/nrf52832_xxaa/ble_advdata.c.o
+ .debug_line    0x000000000002c57a     0x1213 _build/nrf52832_xxaa/ble_advertising.c.o
+ .debug_line    0x000000000002d78d      0xe0c _build/nrf52832_xxaa/ble_conn_params.c.o
+ .debug_line    0x000000000002e599     0x112d _build/nrf52832_xxaa/ble_conn_state.c.o
+ .debug_line    0x000000000002f6c6      0xa01 _build/nrf52832_xxaa/ble_srv_common.c.o
+ .debug_line    0x00000000000300c7      0xc9d _build/nrf52832_xxaa/nrf_ble_gatt.c.o
+ .debug_line    0x0000000000030d64      0x7e0 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
+ .debug_line    0x0000000000031544      0xc1a _build/nrf52832_xxaa/ble_nus.c.o
+ .debug_line    0x000000000003215e      0xfa4 _build/nrf52832_xxaa/nrf_sdh.c.o
+ .debug_line    0x0000000000033102      0xb21 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
+ .debug_line    0x0000000000033c23      0x741 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
+ .debug_line    0x0000000000034364      0x14a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
+ .debug_line    0x00000000000344ae      0x154 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
+ .debug_line    0x0000000000034602      0x16c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
+ .debug_line    0x000000000003476e       0xd7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
+ .debug_line    0x0000000000034845       0xe3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
+ .debug_line    0x0000000000034928      0x10d /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
+ .debug_line    0x0000000000034a35       0xbe /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
+ .debug_line    0x0000000000034af3      0x26b /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
+ .debug_line    0x0000000000034d5e      0x149 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
+ .debug_line    0x0000000000034ea7       0xaf /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
+ .debug_line    0x0000000000034f56      0x228 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
+ .debug_line    0x000000000003517e      0x22a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
+ .debug_line    0x00000000000353a8       0x6e /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
+ .debug_line    0x0000000000035416       0x60 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
+ .debug_line    0x0000000000035476      0x61a /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
+ .debug_line    0x0000000000035a90       0x60 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
 
-.debug_info     0x0000000000000000    0x78bd5
+.debug_info     0x0000000000000000    0x78bd4
  .debug_info    0x0000000000000000       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
  .debug_info    0x0000000000000026       0x26 _build/nrf52832_xxaa/gcc_startup_nrf52.S.o
  .debug_info    0x000000000000004c     0x1158 _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
@@ -11104,36 +11104,36 @@ LOAD linker stubs
  .debug_info    0x000000000003c10b     0x40b6 _build/nrf52832_xxaa/nrfx_uarte.c.o
  .debug_info    0x00000000000401c1     0x2006 _build/nrf52832_xxaa/bsp.c.o
  .debug_info    0x00000000000421c7     0x286b _build/nrf52832_xxaa/bsp_btn_ble.c.o
- .debug_info    0x0000000000044a32     0x7f34 _build/nrf52832_xxaa/main.c.o
- .debug_info    0x000000000004c966     0x3cfe _build/nrf52832_xxaa/ble_srv_brux.c.o
- .debug_info    0x0000000000050664     0x3a0d _build/nrf52832_xxaa/SEGGER_RTT.c.o
- .debug_info    0x0000000000054071     0x2901 _build/nrf52832_xxaa/ble_advdata.c.o
- .debug_info    0x0000000000056972     0x3df8 _build/nrf52832_xxaa/ble_advertising.c.o
- .debug_info    0x000000000005a76a     0x36da _build/nrf52832_xxaa/ble_conn_params.c.o
- .debug_info    0x000000000005de44     0x3983 _build/nrf52832_xxaa/ble_conn_state.c.o
- .debug_info    0x00000000000617c7     0x16bb _build/nrf52832_xxaa/ble_srv_common.c.o
- .debug_info    0x0000000000062e82     0x33b8 _build/nrf52832_xxaa/nrf_ble_gatt.c.o
- .debug_info    0x000000000006623a     0x2970 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
- .debug_info    0x0000000000068baa     0x328b _build/nrf52832_xxaa/ble_nus.c.o
- .debug_info    0x000000000006be35     0x2084 _build/nrf52832_xxaa/nrf_sdh.c.o
- .debug_info    0x000000000006deb9     0x3535 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
- .debug_info    0x00000000000713ee      0xf2d _build/nrf52832_xxaa/nrf_sdh_soc.c.o
- .debug_info    0x000000000007231b      0x995 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
- .debug_info    0x0000000000072cb0      0xe91 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
- .debug_info    0x0000000000073b41      0x9e7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
- .debug_info    0x0000000000074528      0x102 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
- .debug_info    0x000000000007462a      0x92a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
- .debug_info    0x0000000000074f54      0x11a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
- .debug_info    0x000000000007506e       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
- .debug_info    0x0000000000075094      0xf21 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
- .debug_info    0x0000000000075fb5      0x943 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
- .debug_info    0x00000000000768f8       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
- .debug_info    0x000000000007691e      0xa3c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
- .debug_info    0x000000000007735a      0xa10 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
- .debug_info    0x0000000000077d6a       0xa3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
- .debug_info    0x0000000000077e0d       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
- .debug_info    0x0000000000077e33      0xd7c /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
- .debug_info    0x0000000000078baf       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
+ .debug_info    0x0000000000044a32     0x7f33 _build/nrf52832_xxaa/main.c.o
+ .debug_info    0x000000000004c965     0x3cfe _build/nrf52832_xxaa/ble_srv_brux.c.o
+ .debug_info    0x0000000000050663     0x3a0d _build/nrf52832_xxaa/SEGGER_RTT.c.o
+ .debug_info    0x0000000000054070     0x2901 _build/nrf52832_xxaa/ble_advdata.c.o
+ .debug_info    0x0000000000056971     0x3df8 _build/nrf52832_xxaa/ble_advertising.c.o
+ .debug_info    0x000000000005a769     0x36da _build/nrf52832_xxaa/ble_conn_params.c.o
+ .debug_info    0x000000000005de43     0x3983 _build/nrf52832_xxaa/ble_conn_state.c.o
+ .debug_info    0x00000000000617c6     0x16bb _build/nrf52832_xxaa/ble_srv_common.c.o
+ .debug_info    0x0000000000062e81     0x33b8 _build/nrf52832_xxaa/nrf_ble_gatt.c.o
+ .debug_info    0x0000000000066239     0x2970 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
+ .debug_info    0x0000000000068ba9     0x328b _build/nrf52832_xxaa/ble_nus.c.o
+ .debug_info    0x000000000006be34     0x2084 _build/nrf52832_xxaa/nrf_sdh.c.o
+ .debug_info    0x000000000006deb8     0x3535 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
+ .debug_info    0x00000000000713ed      0xf2d _build/nrf52832_xxaa/nrf_sdh_soc.c.o
+ .debug_info    0x000000000007231a      0x995 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
+ .debug_info    0x0000000000072caf      0xe91 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
+ .debug_info    0x0000000000073b40      0x9e7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
+ .debug_info    0x0000000000074527      0x102 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
+ .debug_info    0x0000000000074629      0x92a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
+ .debug_info    0x0000000000074f53      0x11a /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
+ .debug_info    0x000000000007506d       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
+ .debug_info    0x0000000000075093      0xf21 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
+ .debug_info    0x0000000000075fb4      0x943 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
+ .debug_info    0x00000000000768f7       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
+ .debug_info    0x000000000007691d      0xa3c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
+ .debug_info    0x0000000000077359      0xa10 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
+ .debug_info    0x0000000000077d69       0xa3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
+ .debug_info    0x0000000000077e0c       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
+ .debug_info    0x0000000000077e32      0xd7c /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
+ .debug_info    0x0000000000078bae       0x26 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
 
 .debug_abbrev   0x0000000000000000     0xee34
  .debug_abbrev  0x0000000000000000       0x14 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
@@ -11346,7 +11346,7 @@ LOAD linker stubs
  .debug_aranges
                 0x00000000000015e0       0x20 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
 
-.debug_str      0x0000000000000000    0xa3743
+.debug_str      0x0000000000000000    0xa38b7
  .debug_str     0x0000000000000000       0x98 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
  .debug_str     0x0000000000000098       0x87 _build/nrf52832_xxaa/gcc_startup_nrf52.S.o
                                          0x93 (size before relaxing)
@@ -11424,65 +11424,65 @@ LOAD linker stubs
                                       0x7de4b (size before relaxing)
  .debug_str     0x0000000000090db6     0x6ad6 _build/nrf52832_xxaa/bsp_btn_ble.c.o
                                       0x831fa (size before relaxing)
- .debug_str     0x000000000009788c     0x6786 _build/nrf52832_xxaa/main.c.o
-                                      0x9169b (size before relaxing)
- .debug_str     0x000000000009e012      0x45d _build/nrf52832_xxaa/ble_srv_brux.c.o
+ .debug_str     0x000000000009788c     0x68fa _build/nrf52832_xxaa/main.c.o
+                                      0x9180f (size before relaxing)
+ .debug_str     0x000000000009e186      0x45d _build/nrf52832_xxaa/ble_srv_brux.c.o
                                       0x86d69 (size before relaxing)
- .debug_str     0x000000000009e46f      0x521 _build/nrf52832_xxaa/SEGGER_RTT.c.o
+ .debug_str     0x000000000009e5e3      0x521 _build/nrf52832_xxaa/SEGGER_RTT.c.o
                                       0x6c8d3 (size before relaxing)
- .debug_str     0x000000000009e990      0x4a9 _build/nrf52832_xxaa/ble_advdata.c.o
+ .debug_str     0x000000000009eb04      0x4a9 _build/nrf52832_xxaa/ble_advdata.c.o
                                       0x797cb (size before relaxing)
- .debug_str     0x000000000009ee39      0x309 _build/nrf52832_xxaa/ble_advertising.c.o
+ .debug_str     0x000000000009efad      0x309 _build/nrf52832_xxaa/ble_advertising.c.o
                                       0x7d22c (size before relaxing)
- .debug_str     0x000000000009f142      0x2b7 _build/nrf52832_xxaa/ble_conn_params.c.o
+ .debug_str     0x000000000009f2b6      0x2b7 _build/nrf52832_xxaa/ble_conn_params.c.o
                                       0x7c791 (size before relaxing)
- .debug_str     0x000000000009f3f9      0x861 _build/nrf52832_xxaa/ble_conn_state.c.o
+ .debug_str     0x000000000009f56d      0x861 _build/nrf52832_xxaa/ble_conn_state.c.o
                                       0x7b3ef (size before relaxing)
- .debug_str     0x000000000009fc5a      0x2df _build/nrf52832_xxaa/ble_srv_common.c.o
+ .debug_str     0x000000000009fdce      0x2df _build/nrf52832_xxaa/ble_srv_common.c.o
                                       0x70c69 (size before relaxing)
- .debug_str     0x000000000009ff39      0x4ab _build/nrf52832_xxaa/nrf_ble_gatt.c.o
+ .debug_str     0x00000000000a00ad      0x4ab _build/nrf52832_xxaa/nrf_ble_gatt.c.o
                                       0x7c0d6 (size before relaxing)
- .debug_str     0x00000000000a03e4      0x209 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
+ .debug_str     0x00000000000a0558      0x209 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
                                       0x7a282 (size before relaxing)
- .debug_str     0x00000000000a05ed      0x761 _build/nrf52832_xxaa/ble_nus.c.o
+ .debug_str     0x00000000000a0761      0x761 _build/nrf52832_xxaa/ble_nus.c.o
                                       0x7d732 (size before relaxing)
- .debug_str     0x00000000000a0d4e      0x4f4 _build/nrf52832_xxaa/nrf_sdh.c.o
+ .debug_str     0x00000000000a0ec2      0x4f4 _build/nrf52832_xxaa/nrf_sdh.c.o
                                       0x77e0e (size before relaxing)
- .debug_str     0x00000000000a1242      0x6f6 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
+ .debug_str     0x00000000000a13b6      0x6f6 _build/nrf52832_xxaa/nrf_sdh_ble.c.o
                                       0x7ce0a (size before relaxing)
- .debug_str     0x00000000000a1938      0x184 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
+ .debug_str     0x00000000000a1aac      0x184 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
                                       0x76db2 (size before relaxing)
- .debug_str     0x00000000000a1abc      0x1ee /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
+ .debug_str     0x00000000000a1c30      0x1ee /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-atexit.o)
                                         0x62d (size before relaxing)
- .debug_str     0x00000000000a1caa      0x2f7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
+ .debug_str     0x00000000000a1e1e      0x2f7 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-ctype_.o)
                                         0x8fa (size before relaxing)
- .debug_str     0x00000000000a1fa1       0x69 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
+ .debug_str     0x00000000000a2115       0x69 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-exit.o)
                                         0x62e (size before relaxing)
- .debug_str     0x00000000000a200a       0xcc /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
+ .debug_str     0x00000000000a217e       0xcc /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-fini.o)
                                         0x1ff (size before relaxing)
- .debug_str     0x00000000000a20d6       0xa0 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
+ .debug_str     0x00000000000a224a       0xa0 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-impure.o)
                                         0x5e2 (size before relaxing)
- .debug_str     0x00000000000a2176       0x90 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
+ .debug_str     0x00000000000a22ea       0x90 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-init.o)
                                         0x229 (size before relaxing)
- .debug_str     0x00000000000a2206       0xaa /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
+ .debug_str     0x00000000000a237a       0xaa /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memcpy.o)
                                          0xb6 (size before relaxing)
- .debug_str     0x00000000000a22b0       0xa3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
+ .debug_str     0x00000000000a2424       0xa3 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-memset.o)
                                         0x90f (size before relaxing)
- .debug_str     0x00000000000a2353       0x3c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
+ .debug_str     0x00000000000a24c7       0x3c /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strcpy.o)
                                         0x5ec (size before relaxing)
- .debug_str     0x00000000000a238f       0x42 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
+ .debug_str     0x00000000000a2503       0x42 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-strlen.o)
                                          0xb5 (size before relaxing)
- .debug_str     0x00000000000a23d1       0x7d /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
+ .debug_str     0x00000000000a2545       0x7d /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__atexit.o)
                                         0x680 (size before relaxing)
- .debug_str     0x00000000000a244e       0x49 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
+ .debug_str     0x00000000000a25c2       0x49 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
                                         0x62b (size before relaxing)
- .debug_str     0x00000000000a2497      0x109 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
+ .debug_str     0x00000000000a260b      0x109 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libnosys.a(_exit.o)
                                         0x19f (size before relaxing)
- .debug_str     0x00000000000a25a0       0x97 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
+ .debug_str     0x00000000000a2714       0x97 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_aeabi_uldivmod.o)
                                          0xa3 (size before relaxing)
- .debug_str     0x00000000000a2637     0x10dc /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
+ .debug_str     0x00000000000a27ab     0x10dc /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
                                        0x11e6 (size before relaxing)
- .debug_str     0x00000000000a3713       0x30 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
+ .debug_str     0x00000000000a3887       0x30 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_dvmd_tls.o)
                                          0xa7 (size before relaxing)
 
 .debug_loc      0x0000000000000000    0x2db5f
@@ -11603,7 +11603,7 @@ LOAD linker stubs
  .debug_ranges  0x000000000000b178       0x28 /usr/lib/gcc/arm-none-eabi/9.2.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libc_nano.a(lib_a-__call_atexit.o)
  .debug_ranges  0x000000000000b1a0       0xc8 /usr/lib/gcc/arm-none-eabi/9.2.1/thumb/v7e-m+fp/hard/libgcc.a(_udivmoddi4.o)
 
-.debug_macro    0x0000000000000000    0x24075
+.debug_macro    0x0000000000000000    0x240bd
  .debug_macro   0x0000000000000000      0x49a _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
  .debug_macro   0x000000000000049a      0xade _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
  .debug_macro   0x0000000000000f78      0x34e _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
@@ -11815,26 +11815,26 @@ LOAD linker stubs
  .debug_macro   0x0000000000021103       0x70 _build/nrf52832_xxaa/main.c.o
  .debug_macro   0x0000000000021173       0x10 _build/nrf52832_xxaa/main.c.o
  .debug_macro   0x0000000000021183       0x3a _build/nrf52832_xxaa/main.c.o
- .debug_macro   0x00000000000211bd       0xa6 _build/nrf52832_xxaa/main.c.o
- .debug_macro   0x0000000000021263      0x498 _build/nrf52832_xxaa/ble_srv_brux.c.o
- .debug_macro   0x00000000000216fb      0x2da _build/nrf52832_xxaa/SEGGER_RTT.c.o
- .debug_macro   0x00000000000219d5       0x47 _build/nrf52832_xxaa/SEGGER_RTT.c.o
- .debug_macro   0x0000000000021a1c      0x2cd _build/nrf52832_xxaa/ble_advdata.c.o
- .debug_macro   0x0000000000021ce9      0x349 _build/nrf52832_xxaa/ble_advertising.c.o
- .debug_macro   0x0000000000022032      0x3e4 _build/nrf52832_xxaa/ble_conn_params.c.o
- .debug_macro   0x0000000000022416       0x40 _build/nrf52832_xxaa/ble_conn_params.c.o
- .debug_macro   0x0000000000022456      0x39e _build/nrf52832_xxaa/ble_conn_state.c.o
- .debug_macro   0x00000000000227f4      0x2dc _build/nrf52832_xxaa/ble_srv_common.c.o
- .debug_macro   0x0000000000022ad0      0x2ff _build/nrf52832_xxaa/nrf_ble_gatt.c.o
- .debug_macro   0x0000000000022dcf       0x10 _build/nrf52832_xxaa/nrf_ble_gatt.c.o
- .debug_macro   0x0000000000022ddf      0x2e2 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
- .debug_macro   0x00000000000230c1       0x16 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
- .debug_macro   0x00000000000230d7      0x381 _build/nrf52832_xxaa/ble_nus.c.o
- .debug_macro   0x0000000000023458       0x22 _build/nrf52832_xxaa/ble_nus.c.o
- .debug_macro   0x000000000002347a      0x382 _build/nrf52832_xxaa/nrf_sdh.c.o
- .debug_macro   0x00000000000237fc      0x173 _build/nrf52832_xxaa/nrf_sdh.c.o
- .debug_macro   0x000000000002396f      0x3ad _build/nrf52832_xxaa/nrf_sdh_ble.c.o
- .debug_macro   0x0000000000023d1c      0x359 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
+ .debug_macro   0x00000000000211bd       0xee _build/nrf52832_xxaa/main.c.o
+ .debug_macro   0x00000000000212ab      0x498 _build/nrf52832_xxaa/ble_srv_brux.c.o
+ .debug_macro   0x0000000000021743      0x2da _build/nrf52832_xxaa/SEGGER_RTT.c.o
+ .debug_macro   0x0000000000021a1d       0x47 _build/nrf52832_xxaa/SEGGER_RTT.c.o
+ .debug_macro   0x0000000000021a64      0x2cd _build/nrf52832_xxaa/ble_advdata.c.o
+ .debug_macro   0x0000000000021d31      0x349 _build/nrf52832_xxaa/ble_advertising.c.o
+ .debug_macro   0x000000000002207a      0x3e4 _build/nrf52832_xxaa/ble_conn_params.c.o
+ .debug_macro   0x000000000002245e       0x40 _build/nrf52832_xxaa/ble_conn_params.c.o
+ .debug_macro   0x000000000002249e      0x39e _build/nrf52832_xxaa/ble_conn_state.c.o
+ .debug_macro   0x000000000002283c      0x2dc _build/nrf52832_xxaa/ble_srv_common.c.o
+ .debug_macro   0x0000000000022b18      0x2ff _build/nrf52832_xxaa/nrf_ble_gatt.c.o
+ .debug_macro   0x0000000000022e17       0x10 _build/nrf52832_xxaa/nrf_ble_gatt.c.o
+ .debug_macro   0x0000000000022e27      0x2e2 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
+ .debug_macro   0x0000000000023109       0x16 _build/nrf52832_xxaa/nrf_ble_qwr.c.o
+ .debug_macro   0x000000000002311f      0x381 _build/nrf52832_xxaa/ble_nus.c.o
+ .debug_macro   0x00000000000234a0       0x22 _build/nrf52832_xxaa/ble_nus.c.o
+ .debug_macro   0x00000000000234c2      0x382 _build/nrf52832_xxaa/nrf_sdh.c.o
+ .debug_macro   0x0000000000023844      0x173 _build/nrf52832_xxaa/nrf_sdh.c.o
+ .debug_macro   0x00000000000239b7      0x3ad _build/nrf52832_xxaa/nrf_sdh_ble.c.o
+ .debug_macro   0x0000000000023d64      0x359 _build/nrf52832_xxaa/nrf_sdh_soc.c.o
 
 .debug_frame    0x0000000000000000     0x3e1c
  .debug_frame   0x0000000000000000       0xa0 _build/nrf52832_xxaa/nrf_log_backend_rtt.c.o
