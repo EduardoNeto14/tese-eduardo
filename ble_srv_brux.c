@@ -59,11 +59,11 @@ uint32_t ble_brux_init(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
 
 static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
 {
-	uint32_t		err_code;
+	uint32_t			err_code;
 	ble_gatts_char_md_t	char_md;
 	ble_gatts_attr_md_t	cccd_md;
 	ble_gatts_attr_t	attr_char_value;
-	ble_uuid_t		ble_uuid;
+	ble_uuid_t			ble_uuid;
 	ble_gatts_attr_md_t	attr_md;
 	
 	memset(&cccd_md, 0, sizeof(cccd_md));
@@ -76,7 +76,7 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	memset(&char_md, 0, sizeof(char_md));
 
 	char_md.char_props.read 	= 1;
-	char_md.char_props.write	= 0;
+	char_md.char_props.write	= 1;
 	char_md.char_props.notify	= 1;
 	
         static char user_desc[]         = "FORCE VALUE";
@@ -86,7 +86,7 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
         char_md.char_user_desc_max_size = strlen(user_desc);
 
 	char_md.p_char_pf		= NULL;
-	char_md.p_user_desc_md		= NULL;
+	char_md.p_user_desc_md	= NULL;
 	char_md.p_cccd_md		= &cccd_md;
 	char_md.p_sccd_md		= NULL;
 
@@ -106,11 +106,11 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
 
 	attr_char_value.p_uuid		= &ble_uuid;
 	attr_char_value.p_attr_md	= &attr_md;
-	attr_char_value.init_len	= 2*sizeof(uint8_t);
+	attr_char_value.init_len	= 2*sizeof(int16_t);
 	attr_char_value.init_offs	= 0;
-	attr_char_value.max_len		= 2*sizeof(uint8_t);
-	uint8_t value[2]		= {0xab, 0xcd};
-	attr_char_value.p_value		= value;
+	attr_char_value.max_len		= 2*sizeof(int16_t);
+	int16_t value[2]			= {0xFFFF, 0xFFFF};
+	attr_char_value.p_value		= (uint8_t *) value;
 
 	err_code = sd_ble_gatts_characteristic_add(p_brux->service_handler, &char_md, &attr_char_value, &p_brux->brux_force_handles);
 
@@ -142,11 +142,11 @@ static uint32_t bruxism_accel_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	char_md.char_props.write	= 1;
 	char_md.char_props.notify	= 1;
 	
-        static char user_desc[]         = "ACCEL VALUE";
+	static char user_desc[]         = "ACCEL VALUE";
 
-        char_md.p_char_user_desc        = (uint8_t *) user_desc;
-        char_md.char_user_desc_size     = strlen(user_desc);
-        char_md.char_user_desc_max_size = strlen(user_desc);
+	char_md.p_char_user_desc        = (uint8_t *) user_desc;
+	char_md.char_user_desc_size     = strlen(user_desc);
+	char_md.char_user_desc_max_size = strlen(user_desc);
 
 	char_md.p_char_pf		= NULL;
 	char_md.p_user_desc_md	= NULL;
@@ -172,7 +172,7 @@ static uint32_t bruxism_accel_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	attr_char_value.init_len	= 6*sizeof(uint8_t);
 	attr_char_value.init_offs	= 0;
 	attr_char_value.max_len		= 6*sizeof(uint8_t);
-	uint8_t value[6]		= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	uint8_t value[6]			= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	attr_char_value.p_value		= value;
 
 	err_code = sd_ble_gatts_characteristic_add(p_brux->service_handler, &char_md, &attr_char_value, &p_brux->brux_accel_handles);
@@ -194,10 +194,10 @@ static uint32_t bruxism_gyro_char_add(ble_brux_t * p_brux, const ble_brux_init_t
 	
 	memset(&cccd_md, 0, sizeof(cccd_md));
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
-    	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
 
 	cccd_md.write_perm = p_brux_init->custom_value_char_attr_md.cccd_write_perm;
-    	cccd_md.vloc       = BLE_GATTS_VLOC_STACK;
+    cccd_md.vloc       = BLE_GATTS_VLOC_STACK;
 	
 	memset(&char_md, 0, sizeof(char_md));
 
@@ -352,6 +352,26 @@ static void on_write(ble_brux_t * p_brux, ble_evt_t const * p_ble_evt)
             p_brux->evt_handler(p_brux, &evt);
         }
 	}
+
+	else if ((p_evt_write->handle == p_brux->brux_force_handles.cccd_handle) && (p_evt_write->len == 2) )
+	{
+		
+		if (p_brux->evt_handler != NULL)
+        {
+            ble_brux_evt_t evt;
+
+            if (ble_srv_is_notification_enabled(p_evt_write->data))
+            {
+                evt.evt_type = BLE_BRUX_FORCE_NOTIFICATION_ENABLED;
+            }
+            else
+            {
+                evt.evt_type = BLE_BRUX_FORCE_NOTIFICATION_DISABLED;
+            }
+            // Call the application event handler.
+            p_brux->evt_handler(p_brux, &evt);
+        }
+	}
 }
 
 
@@ -394,7 +414,7 @@ static void on_disconnect(ble_brux_t * p_brux, ble_evt_t const * p_ble_evt)
 	p_brux->conn_handle = BLE_CONN_HANDLE_INVALID;
 }
 
-uint32_t ble_brux_force_update(ble_brux_t * p_brux, uint16_t force_value)
+uint32_t ble_brux_force_update(ble_brux_t * p_brux, int16_t * force_value)
 {
     NRF_LOG_INFO("In ble_brux_force_update. \r\n");
     if (p_brux == NULL)
@@ -408,9 +428,9 @@ uint32_t ble_brux_force_update(ble_brux_t * p_brux, uint16_t force_value)
     // Initialize value struct.
     memset(&gatts_value, 0, sizeof(gatts_value));
 
-    gatts_value.len     = sizeof(uint16_t);
+    gatts_value.len     = 2 * sizeof(int16_t);
     gatts_value.offset  = 0;
-    gatts_value.p_value = (uint8_t *) &force_value;
+    gatts_value.p_value = (uint8_t *) force_value;
 
     // Update database.
     err_code = sd_ble_gatts_value_set(p_brux->conn_handle,

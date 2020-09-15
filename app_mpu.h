@@ -4,7 +4,24 @@
 #define TWI_INSTANCE_ID     		    0
 
 #define MPU_I2C_ADDRESS			        0x68
-#define MPU_POWER_REG			        0x6B
+
+#define MPU_PWR_MGMT_1			        0x6B
+
+#define MPU_PWR1_DEVICE_RESET           0b10000000
+#define MPU_PWR1_SLEEP                  0b01000000
+#define MPU_PWR1_CYCLE                  0b00100000
+#define MPU_PWR1_TEMP_DIS               0b00001000 
+#define MPU_PWR1_CLKSEL_INTERNAL        0b00000000
+
+#define MPU_PWR_MGMT_2                  0x6C
+
+#define MPU_PWR2_LP_WAKE_CTRL_0         0b00000000
+#define MPU_PWR2_LP_WAKE_CTRL_1         0b01000000
+#define MPU_PWR2_LP_WAKE_CTRL_2         0b10000000
+#define MPU_PWR2_LP_WAKE_CTRL_3         0b11000000
+#define MPU_PWR2_STBY_ACCEL             0b00111000
+#define MPU_PWR2_STBY_GYRO              0b00000111
+
 #define MPU_POWER_CYCLE			        0b00000000
 #define MPU_READ_TIMEOUT		        2000
 #define MPU_SAMP_FREQ			        250
@@ -45,7 +62,7 @@ void MPU6050_set_mode(void)
 {
     ret_code_t err_code;
 
-    uint8_t reg[2] = {MPU_POWER_REG, MPU_POWER_CYCLE};
+    uint8_t reg[2] = {MPU_PWR_MGMT_1, MPU_POWER_CYCLE};
     err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], sizeof(reg), false);
     APP_ERROR_CHECK(err_code);
     while (m_xfer_done == false);
