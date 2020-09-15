@@ -173,6 +173,8 @@ static void notification_gyro_timeout_handler(void * p_context)
     err_code = ble_brux_gyro_update(&m_brux, m_sample_gyro);
     APP_ERROR_CHECK(err_code);
 }
+
+
 /**@brief Function for the Timer initialization.
  *
  * @details Initializes the timer module. This creates and starts application timers.
@@ -534,7 +536,8 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         
         if (!saadc_status.limit_exceeded) {
             if (!saadc_status.samples_not_exceeded && device_status != DEVICE_IS_IDLE) {
-                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_DISCONNECTING * (device_status == DEVICE_IS_CONNECTED);
+                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) 
+                                + DEVICE_IS_DISCONNECTING * (device_status == DEVICE_IS_CONNECTED);
             }
             else if (saadc_status.samples_not_exceeded)      {saadc_status.samples_not_exceeded--;}
         }
@@ -552,7 +555,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
             saadc_status.samples_not_exceeded = 20;
         }
 
-        nrf_drv_saadc_uninit();                                                                   // Unintialize SAADC to disable EasyDMA and save power
+        nrf_drv_saadc_uninit();                                                                   // Uninitialize SAADC to disable EasyDMA and save power
         NRF_SAADC->INTENCLR = (SAADC_INTENCLR_END_Clear << SAADC_INTENCLR_END_Pos);               // Disable the SAADC interrupt
         NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
         saadc_status.m_saadc_initialized = false;                                                 // Set SAADC as uninitialized
