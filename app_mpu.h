@@ -1,5 +1,5 @@
 #include "nrf_drv_twi.h"
-
+#include <stdbool.h>
 /* TWI instance ID. */
 #define TWI_INSTANCE_ID     		    0
 
@@ -21,6 +21,7 @@
 #define MPU_PWR2_LP_WAKE_CTRL_3         0b11000000
 #define MPU_PWR2_STBY_ACCEL             0b00111000
 #define MPU_PWR2_STBY_GYRO              0b00000111
+#define MPU_PWR2_NO_STBY                0b00000000
 
 #define MPU_POWER_CYCLE			        0b00000000
 #define MPU_READ_TIMEOUT		        2000
@@ -58,28 +59,78 @@ uint8_t m_sample_gyro[MPU_GYRO_READ_REG_SIZE];
 
 const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 
-void MPU6050_set_mode(void)
-{
+void MPU6050_sleep_mode(void) {
     ret_code_t err_code;
 
-    uint8_t reg[2] = {MPU_PWR_MGMT_1, MPU_POWER_CYCLE};
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], sizeof(reg), false);
+    uint8_t reg[2] = {MPU_PWR_MGMT_1, MPU_PWR1_SLEEP | MPU_PWR1_TEMP_DIS};
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
     APP_ERROR_CHECK(err_code);
     while (m_xfer_done == false);
+}
 
-    /* Writing to pointer byte. */
-    reg[0] = MPU_GYRO_CFG_REG;
-    reg[1] =  MPU_GYRO_CFG_250DEG;
-    m_xfer_done = false;
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], sizeof(reg), false);
+void MPU6050_accelerometer() {
+    ret_code_t err_code;
+    uint8_t reg[2];
+
+    reg[0] = MPU_PWR_MGMT_1;
+    reg[1] = MPU_PWR1_CYCLE | MPU_PWR1_TEMP_DIS;
+    NRF_LOG_INFO("PWR1\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
     APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("DONE PWR1\r\n");
     while (m_xfer_done == false);
-
-    reg[0] = MPU_ACCEL_CFG_REG;
-    reg[1] =  MPU_ACCEL_CFG_2G;
     m_xfer_done = false;
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], sizeof(reg), false);
+
+    reg[0] = MPU_PWR_MGMT_2;
+    reg[1] = MPU_PWR2_STBY_GYRO;
+    NRF_LOG_INFO("PWR2\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
     APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("PWR2 DONW\r\n");
+    while (m_xfer_done == false);
+}
+
+void MPU6050_gyroscope() {
+    ret_code_t err_code;
+    uint8_t reg[2];
+
+    reg[0] = MPU_PWR_MGMT_1;
+    reg[1] = MPU_PWR1_TEMP_DIS;
+    NRF_LOG_INFO("PWR1\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("PWR1 DONE\r\n");
+    while (m_xfer_done == false);
+    m_xfer_done = false;
+    
+    reg[0] = MPU_PWR_MGMT_2;
+    reg[1] = MPU_PWR2_STBY_ACCEL;
+    NRF_LOG_INFO("PWR2\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("PWR2 DONE\r\n");
+    while (m_xfer_done == false);
+}
+
+void MPU6050_accel_and_gyro() {
+    ret_code_t err_code;
+    uint8_t reg[2];
+
+    reg[0] = MPU_PWR_MGMT_1;
+    reg[1] = MPU_PWR1_TEMP_DIS;
+    NRF_LOG_INFO("PWR1\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("PWR1 DONE\r\n");
+    while (m_xfer_done == false);
+    m_xfer_done = false;
+
+    reg[0] = MPU_PWR_MGMT_2;
+    reg[1] = MPU_PWR2_NO_STBY;
+    NRF_LOG_INFO("PWR2\r\n");
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_INFO("PWR2 DONE\r\n");
     while (m_xfer_done == false);
 }
 
@@ -141,7 +192,7 @@ static void MPU6050_read_accel()
     m_xfer_done = false;
     reg[0] = MPU_ACCEL_READ_REG;
     
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], 1, false);
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, 1, false);
     APP_ERROR_CHECK(err_code);
     while (m_xfer_done == false);
     
@@ -169,7 +220,7 @@ static void MPU6050_read_gyro()
     m_xfer_done = false;
     reg[0] = MPU_GYRO_READ_REG;
     
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, &reg[0], 1, false);
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, 1, false);
     APP_ERROR_CHECK(err_code);
     while (m_xfer_done == false);
 
@@ -205,4 +256,31 @@ void read_sensor_data()
     #ifdef DEBUG
     SEGGER_RTT_WriteString(0, "NICE\n");
     #endif
-}*/
+}
+
+void MPU6050_set_mode(void)
+{
+    ret_code_t err_code;
+
+    uint8_t reg[2] = {MPU_PWR_MGMT_1, MPU_POWER_CYCLE};
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+
+    // Writing to pointer byte. 
+    reg[0] = MPU_GYRO_CFG_REG;
+    reg[1] =  MPU_GYRO_CFG_250DEG;
+    m_xfer_done = false;
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+
+    reg[0] = MPU_ACCEL_CFG_REG;
+    reg[1] =  MPU_ACCEL_CFG_2G;
+    m_xfer_done = false;
+    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+}
+
+*/

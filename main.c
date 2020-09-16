@@ -76,7 +76,7 @@
 
 #define RTC_FREQUENCY                   32                                        //Determines the RTC frequency and prescaler
 #define RTC_CC_VALUE                    8                                         //Determines the RTC interrupt frequency and thereby the SAADC sampling frequency
-#define SAADC_SAMPLE_INTERVAL_MS        1000                                       //Interval in milliseconds at which RTC times out and triggers SAADC sample task (
+#define SAADC_SAMPLE_INTERVAL_MS        150                                       //Interval in milliseconds at which RTC times out and triggers SAADC sample task (
 #define SAADC_CALIBRATION_INTERVAL      5                                         //Determines how often the SAADC should be calibrated relative to NRF_DRV_SAADC_EVT_DONE event. E.g. value 5 will make the SAADC calibrate every fifth time the NRF_DRV_SAADC_EVT_DONE is received.
 #define SAADC_SAMPLES_IN_BUFFER         1                                         //Number of SAADC samples in RAM before returning a SAADC event. For low power SAADC set this constant to 1. Otherwise the EasyDMA will be enabled for an extended time which consumes high current.
 #define SAADC_OVERSAMPLE                NRF_SAADC_OVERSAMPLE_DISABLED             //Oversampling setting for the SAADC. Setting oversample to 4x This will make the SAADC output a single averaged value when the SAMPLE task is triggered 4 times. Enable BURST mode to make the SAADC sample 4 times when triggering SAMPLE task once.
@@ -104,8 +104,22 @@ typedef struct saadc
     bool notification_enabled;
 } saadc_status_t;
 
+typedef enum {
+    MPU_SLEEP,
+    MPU_ACCEL,
+    MPU_GYRO,
+    MPU_ACCEL_GYRO
+} mpu_stages;
+
+typedef struct {
+    mpu_stages stage;
+    bool status_changed;
+    bool updating;
+} mpu_status_t;
+
 static saadc_status_t          saadc_status  = {false, false, 20, 0, false};
 static device_status_t         device_status = DEVICE_IS_IDLE;
+static mpu_status_t            mpu_status = {MPU_SLEEP, false, false};
 
 static nrf_saadc_value_t       m_buffer_pool[2][SAMPLE_BUFFER];
 const  nrf_drv_rtc_t           rtc = NRF_DRV_RTC_INSTANCE(2);                     /**< Declaring an instance of nrf_drv_rtc for RTC2. */
@@ -157,10 +171,16 @@ static void notification_accel_timeout_handler(void * p_context)
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
     
-    // Increment the value of m_custom_value before nortifing it.
-    MPU6050_read_accel();
-    err_code = ble_brux_accel_update(&m_brux, m_sample_accel);
-    APP_ERROR_CHECK(err_code);
+    //Talvez adicionar uma verificaçao se o mpu já foi configurado
+    if (device_status == DEVICE_IS_CONNECTED && !mpu_status.status_changed) {
+        mpu_status.updating = true;
+        NRF_LOG_INFO("Reading Accel \r\n");
+        MPU6050_read_accel();
+        NRF_LOG_INFO("Accel Read\r\n");
+        err_code = ble_brux_accel_update(&m_brux, m_sample_accel);
+        APP_ERROR_CHECK(err_code);
+        mpu_status.updating = false;
+    }
 }
 
 static void notification_gyro_timeout_handler(void * p_context)
@@ -168,10 +188,14 @@ static void notification_gyro_timeout_handler(void * p_context)
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
     
-    // Increment the value of m_custom_value before nortifing it.
-    MPU6050_read_gyro();
-    err_code = ble_brux_gyro_update(&m_brux, m_sample_gyro);
-    APP_ERROR_CHECK(err_code);
+    //Talvez adicionar uma verificaçao se o mpu já foi configurado
+    if (device_status == DEVICE_IS_CONNECTED  && !mpu_status.status_changed) {
+        mpu_status.updating = true;
+        MPU6050_read_gyro();
+        err_code = ble_brux_gyro_update(&m_brux, m_sample_gyro);
+        APP_ERROR_CHECK(err_code);
+        mpu_status.updating = false;
+    }
 }
 
 
@@ -272,37 +296,49 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
 	switch(p_evt->evt_type)
 	{
         case BLE_BRUX_ACCEL_NOTIFICATION_ENABLED:
+            mpu_status.status_changed = true;
             
+            mpu_status.stage = MPU_ACCEL_GYRO * (mpu_status.stage == MPU_GYRO) + MPU_ACCEL * (mpu_status.stage == MPU_SLEEP);   
             err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
             APP_ERROR_CHECK(err_code);
+            
             break;
         
         case BLE_BRUX_ACCEL_NOTIFICATION_DISABLED:
-
+            while (mpu_status.updating);
+            mpu_status.status_changed = true;
+            mpu_status.stage = MPU_GYRO * (mpu_status.stage == MPU_ACCEL_GYRO) + MPU_SLEEP * (mpu_status.stage == MPU_ACCEL);
+            
             err_code = app_timer_stop(m_accel_notification);
             APP_ERROR_CHECK(err_code);
+            
             break;
         
         case BLE_BRUX_GYRO_NOTIFICATION_ENABLED:
+            mpu_status.status_changed = true;
+            mpu_status.stage = MPU_ACCEL_GYRO * (mpu_status.stage == MPU_ACCEL) + MPU_GYRO * (mpu_status.stage == MPU_SLEEP);
             
             err_code = app_timer_start(m_gyro_notification, NOTIFICATION_INTERVAL, NULL);
             APP_ERROR_CHECK(err_code);
+            
             break;
         
         case BLE_BRUX_GYRO_NOTIFICATION_DISABLED:
+            while (mpu_status.updating);
+            mpu_status.status_changed = true;
+            mpu_status.stage = MPU_ACCEL * (mpu_status.stage == MPU_ACCEL_GYRO) + MPU_SLEEP * (mpu_status.stage == MPU_GYRO);
 
             err_code = app_timer_stop(m_gyro_notification);
             APP_ERROR_CHECK(err_code);
+            
             break;
 		
         case BLE_BRUX_FORCE_NOTIFICATION_ENABLED:
             saadc_status.notification_enabled = true;
-            
             break;
         
         case BLE_BRUX_FORCE_NOTIFICATION_DISABLED:
             saadc_status.notification_enabled = false;
-            
             break;
         
         case BLE_BRUX_EVT_CONNECTED:
@@ -639,7 +675,10 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             NRF_LOG_INFO("Disconnected.");
             // LED indication will be changed when advertising starts.
 	        device_status = DEVICE_IS_ADVERTISING;
+            saadc_status.notification_enabled = false;
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
+            mpu_status.status_changed = true;
+            mpu_status.stage = MPU_SLEEP;
             break;
 
         case BLE_GAP_EVT_CONNECTED:
@@ -909,9 +948,9 @@ int main(void)
 
     //advertising_start(erase_bonds);
 
-    //twi_init();
+    twi_init();
 
-    //MPU6050_set_mode();
+    MPU6050_sleep_mode();
 
     // Enter main loop.
     for (;;)
@@ -919,11 +958,15 @@ int main(void)
         if (device_status == DEVICE_IS_STOPPING_ADV || device_status == DEVICE_IS_DISCONNECTING) {
             if (device_status == DEVICE_IS_DISCONNECTING) {
                 NRF_LOG_INFO("Disconnecting\r\n");
+                while (mpu_status.updating);
                 err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             
                 if (err_code != NRF_ERROR_INVALID_STATE) {APP_ERROR_CHECK(err_code);}
                 device_status = DEVICE_IS_IDLE;
                 NRF_LOG_INFO("Success\r\n");
+            
+                mpu_status.status_changed = true * (mpu_status.stage != MPU_SLEEP);
+                mpu_status.stage = MPU_SLEEP;
             }
             else {
                 NRF_LOG_INFO("Stop Adv\r\n");
@@ -932,6 +975,33 @@ int main(void)
                 device_status = DEVICE_IS_IDLE;
                 NRF_LOG_INFO("Success\r\n");
             }
+        }
+
+        if (mpu_status.status_changed) {
+            switch (mpu_status.stage) {
+                case MPU_SLEEP:
+                    MPU6050_sleep_mode();
+                    
+                    err_code = app_timer_stop(m_accel_notification);
+                    APP_ERROR_CHECK(err_code);
+                    
+                    err_code = app_timer_stop(m_gyro_notification);
+                    APP_ERROR_CHECK(err_code);
+                    break;
+                case MPU_ACCEL:
+                    MPU6050_accelerometer();
+                    break;
+                case MPU_GYRO:
+                    MPU6050_gyroscope();
+                    break;
+                case MPU_ACCEL_GYRO:
+                    MPU6050_accel_and_gyro();
+                    break;
+                default:
+                    break;
+            }
+            mpu_status.status_changed = false;
+
         }
         else {
             idle_state_handle();
