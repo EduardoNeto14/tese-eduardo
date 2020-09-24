@@ -51,8 +51,8 @@
 
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
 #define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
-#define SLAVE_LATENCY                   150                                       /**< Slave latency. */
-#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(3200, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define SLAVE_LATENCY                   0                                       /**< Slave latency. */
+#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
 
 #define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
@@ -102,6 +102,7 @@ typedef struct saadc
     uint8_t samples_not_exceeded;
     uint32_t m_adc_evt_counter;
     bool notification_enabled;
+    bool stop_sending;
 } saadc_status_t;
 
 typedef enum {
@@ -119,7 +120,7 @@ typedef struct {
     bool hold;
 } mpu_status_t;
 
-static saadc_status_t          saadc_status  = {false, false, 20, 0, false};
+static saadc_status_t          saadc_status  = {false, false, 20, 0, false, false};
 static device_status_t         device_status = DEVICE_IS_IDLE;
 static mpu_status_t            mpu_status = {MPU_SLEEP, false, false, false, MPU_SLEEP};
 
@@ -574,8 +575,9 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         
         if (!saadc_status.limit_exceeded) {
             if (!saadc_status.samples_not_exceeded && device_status != DEVICE_IS_IDLE) {
-                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING);
-                mpu_status.hold = true * (mpu_status.stage != MPU_SLEEP);
+                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_CONNECTED * (device_status == DEVICE_IS_CONNECTED);
+                mpu_status.hold = true * (mpu_status.stage != MPU_SLEEP) + true * (mpu_status.hold);
+                saadc_status.stop_sending = true * (saadc_status.notification_enabled);
             }
             else if (saadc_status.samples_not_exceeded)      {saadc_status.samples_not_exceeded--;}
         }
@@ -598,7 +600,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         NVIC_ClearPendingIRQ(SAADC_IRQn);                                                         // Clear the SAADC interrupt if set
         saadc_status.m_saadc_initialized = false;                                                 // Set SAADC as uninitialized
 
-        if (saadc_status.notification_enabled) {
+        if (saadc_status.notification_enabled && !saadc_status.stop_sending) {
             int16_t sensor_values[] = {sensor1, sensor2};
             ble_brux_force_update(&m_brux, sensor_values);
         }
@@ -613,6 +615,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
             mpu_status.prev_stage = MPU_SLEEP;
         }
         saadc_status.limit_exceeded = true;
+        saadc_status.stop_sending = false;
     }
 }
 /**
@@ -988,6 +991,7 @@ int main(void)
                         err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
                         APP_ERROR_CHECK(err_code);
                         mpu_status.hold = false;
+                        NRF_LOG_INFO("RESTART MPU_ACCEL\r\n");
                     }
 
                     break;
@@ -1031,6 +1035,8 @@ int main(void)
             
             err_code = app_timer_stop(m_gyro_notification);
             APP_ERROR_CHECK(err_code);
+
+            NRF_LOG_INFO("HOLDING\r\n");
         }
         else {
             idle_state_handle();
