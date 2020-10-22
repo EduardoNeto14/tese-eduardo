@@ -2,59 +2,16 @@ import pygatt
 from bleak import BleakScanner
 import asyncio
 import binascii
-import uuid
 import ctypes as ct
 from math import sqrt, atan, degrees, atan2
+
+from constants import *
 
 import pygame
 from pygame.locals import *
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
-vertices = (
-        (3, -0.1, -0.75),
-        (3, 0.1, -0.75),
-        (-3, 0.1, -0.75),
-        (-3, -0.1, -0.75),
-        (3, -0.1, 0.75),
-        (3, 0.1, 0.75),
-        (-3, -0.1, 0.75),
-        (-3, 0.1, 0.75)
-        )
-
-edges = (
-        (0,1),
-        (0,3),
-        (0,4),
-        (2,1),
-        (2,3),
-        (2,7),
-        (6,3),
-        (6,4),
-        (6,7),
-        (5,1),
-        (5,4),
-        (5,7)
-        )
-
-surfaces = (
-        (0,1,2,3),
-        (3,2,7,6),
-        (6,7,5,4),
-        (4,5,1,0),
-        (1,5,7,2),
-        (4,0,3,6)
-        )
-
-colors = (
-        (1,0,0),
-        (1,0,0),
-        (1,0,0),
-        (1,0,0),
-        (1,0,0),
-        (1,0,0)
-        )
 
 delta_pitch = 0
 pitch = 0
@@ -80,16 +37,6 @@ def Cube():
 MAC_ADDRESS = None
 ADDRESS_TYPE = pygatt.BLEAddressType.random
 
-SERVICE_UUID    = uuid.UUID("42200001-5520-5820-4920-53204d204f20")
-FORCE_UUID      = uuid.UUID("42201111-5520-5820-4920-53204d204f20")
-ACCEL_UUID      = uuid.UUID("42202222-5520-5820-4920-53204d204f20")
-GYRO_UUID       = uuid.UUID("42203333-5520-5820-4920-53204d204f20")
-BATTERY_UUID    = uuid.UUID("42205555-5520-5820-4920-53204d204f20")
-
-MPU_ACCEL_READINGSCALE_2G       = 16384.0
-MPU_GYRO_READINGSCALE_250DEG    = 131.0
-BRUXISM_UUIDS   = [FORCE_UUID, ACCEL_UUID, GYRO_UUID, BATTERY_UUID]
-
 def twos_comp(val, n_bytes):
     val = int(val, 16)
     b = val.to_bytes(n_bytes, byteorder="big")                                                          
@@ -104,6 +51,10 @@ class bcolors:
     END = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+def force_handler(handle, value):
+    print(f"Force -> 1: ({twos_comp(''.join(reversed(''.join(reversed(value.hex()[0:2])) + ''.join(reversed(value.hex()[2:4])))), 2)}), 2: ({twos_comp(''.join(reversed(''.join(reversed(value.hex()[4:6])) + ''.join(reversed(value.hex()[6:8])))), 2)})")
+
 
 def accel_handler(handle, value):
     global pitch
@@ -122,21 +73,6 @@ def accel_handler(handle, value):
         prev_pitch = pitch
         prev_roll = roll
         
-        '''
-        pitch   = degrees(atan( y /(sign_z(z)*sqrt(x*x + z*z))))
-        delta_pitch = pitch - prev_pitch
-        sign_pitch = lambda pitch: -1 if pitch > 80 or pitch < -90 else 1
-        roll    = degrees(atan((-1)*x/(sign_z(z)*sign_pitch(pitch)*(sqrt(z*z + 0.01*y*y))) )) 
-        delta_roll = roll - prev_roll
-        '''
-        
-        '''
-        pitch = degrees(atan((-1) * x / (sqrt(y*y + z*z))))
-        delta_pitch = pitch - prev_pitch
-        roll = degrees(atan(y / sign_z*sqrt(z*z + 0.01*x*x)))
-        delta_roll = roll - prev_roll
-        '''
-        
         calc_y = (-1) * x
         calc_x = sign_z(z)*sqrt(0.01*y*y + z*z)
         pitch = degrees(atan2(calc_y , calc_x ))
@@ -146,13 +82,27 @@ def accel_handler(handle, value):
         roll = degrees(atan2(calc_y , calc_x ))
         delta_roll = roll - prev_roll
     
+        print(f"Roll: {pitch}º --- Pitch: {roll}º\n")
+
         update = True
     
     except ZeroDivisionError:
         return
 
     print(f"ACELERÒMETRO -> X: ({x}), Y: ({y}), Z: ({z})\n")
-    print(f"Pitch: ({pitch}), Roll: ({roll})\n")
+
+    if z >= 0.5:
+        print("Position -> Supine")
+
+    elif z <= -0.5:
+        print("Position -> Prone")
+
+    else:
+        if x >= 0.5:
+            print("Position -> RLR")
+
+        elif x <= -0.5:
+            print("Position -> LLR")
 
 def gyro_handler(handle, value):
     print(f"GIROSCÓPIO -> X: ({twos_comp(value.hex()[0:4], 2) / MPU_GYRO_READINGSCALE_250DEG}), Y: ({twos_comp(value.hex()[4:8], 2) / MPU_GYRO_READINGSCALE_250DEG}), Z: ({twos_comp(value.hex()[8:12], 2) / MPU_GYRO_READINGSCALE_250DEG})")
@@ -206,6 +156,7 @@ def main():
             glRotatef(0, 0.0, 0.0, 0.0)
             
             device.subscribe(ACCEL_UUID, callback=accel_handler)
+            device.subscribe(FORCE_UUID, callback=force_handler)
             #device.subscribe(GYRO_UUID, callback=gyro_handler)
             
             while True:
@@ -213,7 +164,7 @@ def main():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         device.unsubscribe(ACCEL_UUID)
-                        #device.unsubscribe(GYRO_UUID)
+                        device.unsubscribe(FORCE_UUID)
                         adapter.stop()
                         quit()
                     if event.type == pygame.MOUSEBUTTONDOWN:

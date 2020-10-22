@@ -87,12 +87,11 @@
 #define END_PAGE                        0x00080000
 
 typedef enum {
-    DEVICE_IS_ADVERTISING,
-    DEVICE_IS_CONNECTED,
-    DEVICE_IS_IDLE,
-    DEVICE_IS_STOPPING_ADV,
-    DEVICE_IS_DISCONNECTING,
-    DEVICE_WAS_DISCONNECTED
+    DEVICE_IS_ADVERTISING,              // Device is in advertising mode
+    DEVICE_IS_CONNECTED,                // Device is connected. It can also be with notifications enabled
+    DEVICE_IS_IDLE,                     // Device is in its initial status
+    DEVICE_IS_STOPPING_ADV,             // Device is set to stop advertsising (DEVICE_IS_ADVERTISING -> DEVICE_IS_IDLE)
+    DEVICE_IS_HOLDING                   // Device is in its Hold Status
 } device_status_t;
 
 typedef struct saadc
@@ -176,6 +175,7 @@ static void notification_accel_timeout_handler(void * p_context)
     
     //Talvez adicionar uma verificaçao se o mpu já foi configurado
     if (device_status == DEVICE_IS_CONNECTED && !mpu_status.status_changed) {
+        while (mpu_status.updating);
         mpu_status.updating = true;
         NRF_LOG_INFO("Reading Accel \r\n");
         MPU6050_read_accel();
@@ -193,6 +193,7 @@ static void notification_gyro_timeout_handler(void * p_context)
     
     //Talvez adicionar uma verificaçao se o mpu já foi configurado
     if (device_status == DEVICE_IS_CONNECTED  && !mpu_status.status_changed) {
+        while (mpu_status.updating);
         mpu_status.updating = true;
         MPU6050_read_gyro();
         err_code = ble_brux_gyro_update(&m_brux, m_sample_gyro);
@@ -343,12 +344,6 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
         case BLE_BRUX_FORCE_NOTIFICATION_DISABLED:
             saadc_status.notification_enabled = false;
             break;
-        
-        case BLE_BRUX_EVT_CONNECTED:
-		    break;
-		
-        case BLE_BRUX_EVT_DISCONNECTED:
-			break;
 	 	
         default:
 		    break;
@@ -575,7 +570,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         
         if (!saadc_status.limit_exceeded) {
             if (!saadc_status.samples_not_exceeded && device_status != DEVICE_IS_IDLE) {
-                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_CONNECTED * (device_status == DEVICE_IS_CONNECTED);
+                device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_HOLDING * (device_status == DEVICE_IS_CONNECTED); //Dantes, DEVICE_IS_CONNECTED * (...)
                 mpu_status.hold = true * (mpu_status.stage != MPU_SLEEP) + true * (mpu_status.hold);
                 saadc_status.stop_sending = true * (saadc_status.notification_enabled);
             }
@@ -590,7 +585,9 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
                 advertising_start(erase_bonds);
                 device_status = DEVICE_IS_ADVERTISING;
             }
-
+            else {
+                device_status = DEVICE_IS_CONNECTED * (device_status == DEVICE_IS_HOLDING || device_status == DEVICE_IS_CONNECTED);        // If the the device_status = DEVICE_IS_ADVERTISING, it will remain like that. (DEVICE_IS_ADVERTISING = 0, as is the first element of the enum)
+            }
             saadc_status.limit_exceeded = false;
             saadc_status.samples_not_exceeded = 20;
         }
@@ -608,7 +605,6 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
 
     if (p_event->type == NRF_DRV_SAADC_EVT_LIMIT)
     {
-        NRF_LOG_INFO("YEEEES\r\n");
         if (mpu_status.hold) {
             mpu_status.status_changed = true;
             mpu_status.stage = mpu_status.prev_stage;
@@ -618,26 +614,6 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
         saadc_status.stop_sending = false;
     }
 }
-/**
- * @brief Function for putting the chip into sleep mode.
- *
- * @note This function will not return.
- */
-/*static void sleep_mode_enter(void)
-{
-    ret_code_t err_code;
-
-    err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
-
-    // Prepare wakeup buttons.
-    err_code = bsp_btn_ble_sleep_mode_prepare();
-    APP_ERROR_CHECK(err_code);
-
-    // Go to system-off mode (this function will not return; wakeup will cause a reset).
-    err_code = sd_power_system_off();
-    APP_ERROR_CHECK(err_code);
-}*/
 
 /**@brief Function for handling advertising events.
  *
@@ -738,11 +714,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	    err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
 	    APP_ERROR_CHECK(err_code);
     
-    //case BLE_GAP_EVT_ADV_SET_TERMINATED:
-    //    NRF_LOG_INFO("Event GAP occured\r\n");
-    //    break;
     default:
-        //NRF_LOG_INFO("Teste\r\n");    // No implementation needed.
         break;
     }
 }
@@ -947,9 +919,6 @@ int main(void)
     // Start execution.
     NRF_LOG_INFO("Template example started.");
     
-    //lfclk_config();                                  // Configure low frequency 32kHz clock
-    //NRF_LOG_INFO("lfcll");
-    
     rtc_config();                                    // Configure RTC. The RTC will generate periodic interrupts. Requires 32kHz clock to operate.
     NRF_LOG_INFO("rtc");
     
@@ -1038,9 +1007,8 @@ int main(void)
 
             NRF_LOG_INFO("HOLDING\r\n");
         }
-        else {
-            idle_state_handle();
-        }
+        
+        idle_state_handle();
                 
         NRF_LOG_FLUSH();
     }

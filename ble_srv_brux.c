@@ -75,15 +75,15 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	
 	memset(&char_md, 0, sizeof(char_md));
 
-	char_md.char_props.read 	= 1;
-	char_md.char_props.write	= 1;
-	char_md.char_props.notify	= 1;
+	char_md.char_props.read 			= 1;
+	char_md.char_props.write_wo_resp	= 1;
+	char_md.char_props.notify			= 1;
 	
-        static char user_desc[]         = "FORCE VALUE";
+	static char user_desc[]         = "FORCE VALUE";
 
-        char_md.p_char_user_desc        = (uint8_t *) user_desc;
-        char_md.char_user_desc_size     = strlen(user_desc);
-        char_md.char_user_desc_max_size = strlen(user_desc);
+	char_md.p_char_user_desc        = (uint8_t *) user_desc;
+	char_md.char_user_desc_size     = strlen(user_desc);
+	char_md.char_user_desc_max_size = strlen(user_desc);
 
 	char_md.p_char_pf		= NULL;
 	char_md.p_user_desc_md	= NULL;
@@ -138,9 +138,9 @@ static uint32_t bruxism_accel_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	
 	memset(&char_md, 0, sizeof(char_md));
 
-	char_md.char_props.read 	= 1;
-	char_md.char_props.write	= 1;
-	char_md.char_props.notify	= 1;
+	char_md.char_props.read 			= 1;
+	char_md.char_props.write_wo_resp	= 1;
+	char_md.char_props.notify			= 1;
 	
 	static char user_desc[]         = "ACCEL VALUE";
 
@@ -201,9 +201,9 @@ static uint32_t bruxism_gyro_char_add(ble_brux_t * p_brux, const ble_brux_init_t
 	
 	memset(&char_md, 0, sizeof(char_md));
 
-	char_md.char_props.read 	= 1;
-	char_md.char_props.write	= 1;
-	char_md.char_props.notify	= 1;
+	char_md.char_props.read 			= 1;
+	char_md.char_props.write_wo_resp	= 1;
+	char_md.char_props.notify			= 1;
 	
 	static char user_desc[]         = "GYRO VALUE";
 
@@ -257,7 +257,7 @@ static uint32_t bruxism_battery_char_add(ble_brux_t * p_brux, const ble_brux_ini
 	
 	memset(&cccd_md, 0, sizeof(cccd_md));
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
-    	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
 
 	cccd_md.write_perm = p_brux_init->custom_value_char_attr_md.cccd_write_perm;
     	cccd_md.vloc       = BLE_GATTS_VLOC_STACK;

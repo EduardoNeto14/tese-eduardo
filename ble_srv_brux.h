@@ -17,10 +17,14 @@
 #define BRUX_TEMP_UUID		0x4444
 /**@brief Custom Service structure. This contains various status information for the service. */
 
+#ifndef BLE_BRUX_BLE_OBSERVER_PRIO
+#define BLE_BRUX_BLE_OBSERVER_PRIO 2
+#endif
+
 #define BLE_BRUX_DEF(_name) 			\
 static ble_brux_t	_name;			\
 NRF_SDH_BLE_OBSERVER(_name ## _obs , 		\
-		BLE_HRS_BLE_OBSERVER_PRIO, 	\
+		BLE_BRUX_BLE_OBSERVER_PRIO, 	\
 		ble_brux_on_ble_evt, &_name);
 
 
@@ -32,8 +36,8 @@ typedef enum
     BLE_BRUX_GYRO_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
 	BLE_BRUX_FORCE_NOTIFICATION_ENABLED,                             /**< Custom value notification enabled event. */
     BLE_BRUX_FORCE_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
-    BLE_BRUX_EVT_DISCONNECTED,
-    BLE_BRUX_EVT_CONNECTED
+    //BLE_BRUX_EVT_DISCONNECTED,
+    //BLE_BRUX_EVT_CONNECTED
 } ble_brux_evt_type_t;
 
 typedef struct
@@ -48,7 +52,6 @@ typedef void (*ble_brux_evt_handler_t) (ble_brux_t * p_bas, ble_brux_evt_t * p_e
 typedef struct
 {
 	ble_brux_evt_handler_t			evt_handler;	
-	uint8_t							initial_brux_value;
 	ble_srv_cccd_security_mode_t	custom_value_char_attr_md;
 } ble_brux_init_t;
 
