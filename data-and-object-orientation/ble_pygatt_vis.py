@@ -6,18 +6,13 @@ import ctypes as ct
 from math import sqrt, atan, degrees, atan2
 
 from constants import *
+from orientation import *
 
 import pygame
 from pygame.locals import *
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
-delta_pitch = 0
-pitch = 0
-roll = 0
-delta_roll = 0
-update = False
 
 def Cube():
     glBegin(GL_QUADS)
@@ -37,75 +32,8 @@ def Cube():
 MAC_ADDRESS = None
 ADDRESS_TYPE = pygatt.BLEAddressType.random
 
-def twos_comp(val, n_bytes):
-    val = int(val, 16)
-    b = val.to_bytes(n_bytes, byteorder="big")                                                          
-    return int.from_bytes(b, byteorder="big", signed=True)
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    END = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 def force_handler(handle, value):
-    print(f"Force -> 1: ({twos_comp(''.join(reversed(''.join(reversed(value.hex()[0:2])) + ''.join(reversed(value.hex()[2:4])))), 2)}), 2: ({twos_comp(''.join(reversed(''.join(reversed(value.hex()[4:6])) + ''.join(reversed(value.hex()[6:8])))), 2)})")
-
-
-def accel_handler(handle, value):
-    global pitch
-    global roll
-    global delta_pitch
-    global delta_roll
-    global update
-
-    x = twos_comp(value.hex()[0:4], 2)  /  MPU_ACCEL_READINGSCALE_2G
-    y = twos_comp(value.hex()[4:8], 2)  /  MPU_ACCEL_READINGSCALE_2G
-    z = twos_comp(value.hex()[8:12], 2) /  MPU_ACCEL_READINGSCALE_2G
-    
-    sign_z = lambda z: 1 if z >= 0 else -1
-
-    try:
-        prev_pitch = pitch
-        prev_roll = roll
-        
-        calc_y = (-1) * x
-        calc_x = sign_z(z)*sqrt(0.01*y*y + z*z)
-        pitch = degrees(atan2(calc_y , calc_x ))
-        delta_pitch = pitch - prev_pitch
-        calc_y = y
-        calc_x = sqrt(z*z + x*x)
-        roll = degrees(atan2(calc_y , calc_x ))
-        delta_roll = roll - prev_roll
-    
-        print(f"Roll: {pitch}º --- Pitch: {roll}º\n")
-
-        update = True
-    
-    except ZeroDivisionError:
-        return
-
-    print(f"ACELERÒMETRO -> X: ({x}), Y: ({y}), Z: ({z})\n")
-
-    if z >= 0.5:
-        print("Position -> Supine")
-
-    elif z <= -0.5:
-        print("Position -> Prone")
-
-    else:
-        if x >= 0.5:
-            print("Position -> RLR")
-
-        elif x <= -0.5:
-            print("Position -> LLR")
-
-def gyro_handler(handle, value):
-    print(f"GIROSCÓPIO -> X: ({twos_comp(value.hex()[0:4], 2) / MPU_GYRO_READINGSCALE_250DEG}), Y: ({twos_comp(value.hex()[4:8], 2) / MPU_GYRO_READINGSCALE_250DEG}), Z: ({twos_comp(value.hex()[8:12], 2) / MPU_GYRO_READINGSCALE_250DEG})")
+    print(f"Force -> 1: ({ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[0:2])) + ''.join(reversed(value.hex()[2:4])))), 2)}), 2: ({ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[4:6])) + ''.join(reversed(value.hex()[6:8])))), 2)})")
 
 async def discover():
     scanner = BleakScanner()
@@ -127,9 +55,7 @@ def main():
     loop.run_until_complete(discover())
     
     global MAC_ADDRESS
-    global delta_pitch
-    global delta_roll
-    global update
+    filter = ComplementaryFilter(False)
 
     if MAC_ADDRESS != None:
         adapter = pygatt.GATTToolBackend()
@@ -154,10 +80,10 @@ def main():
             glTranslatef(0.0, 0.0 , -10.0)
 
             glRotatef(0, 0.0, 0.0, 0.0)
-            
-            device.subscribe(ACCEL_UUID, callback=accel_handler)
+
             device.subscribe(FORCE_UUID, callback=force_handler)
-            #device.subscribe(GYRO_UUID, callback=gyro_handler)
+            device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
+            #device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
             
             while True:
                 for event in pygame.event.get():
@@ -165,6 +91,7 @@ def main():
                         pygame.quit()
                         device.unsubscribe(ACCEL_UUID)
                         device.unsubscribe(FORCE_UUID)
+                        #device.unsubscribe(GYRO_UUID)
                         adapter.stop()
                         quit()
                     if event.type == pygame.MOUSEBUTTONDOWN:
@@ -173,11 +100,15 @@ def main():
                         if event.button == 5:
                             glTranslatef(0,0,-1.0)
                 
-                if update:
+                if filter.update:
                     glTranslatef(0.0, 0.0 , 0.0)
-                    glRotatef(delta_roll, 1.0, 0.0, 0.0)
-                    glRotatef(delta_pitch, 0.0, 0.0, -1.0)
-                    update = False
+                    glRotatef(filter.delta_roll, 1.0, 0.0, 0.0)
+                    glRotatef(filter.delta_pitch, 0.0, 0.0, -1.0)
+                    
+                    if filter.gyro_enabled:
+                        glRotatef(filter.delta_yaw, 0.0, 1.0, 0.0)
+                    
+                    filter.update = False
                 
                 glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
                 Cube()
