@@ -85,12 +85,6 @@
 
 #define SAMPLE_BUFFER                   2                                         //Buffer length for SAADC samples
 
-// Low frequency clock source to be used by the SoftDevice
-/*define NRF_CLOCK_LFCLKSRC      {.source        = NRF_CLOCK_LF_SRC_RC,            \
-//                                 .rc_ctiv       = 16,                                \
-//                                 .rc_temp_ctiv  = 2,                                \
-/                                 .xtal_accuracy = NRF_CLOCK_LF_XTAL_ACCURACY_10_PPM}*/
-
 typedef enum {
     DEVICE_IS_ADVERTISING,              // Device is in advertising mode
     DEVICE_IS_CONNECTED,                // Device is connected. It can also be with notifications enabled
@@ -489,18 +483,6 @@ static void conn_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
-/**@brief Function for starting timers.
- */
-static void application_timers_start(void)
-{
-    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
-       ret_code_t err_code;
-       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-       APP_ERROR_CHECK(err_code); */
-
-}
-
 static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
 {
     ret_code_t err_code;
@@ -522,13 +504,6 @@ static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
         nrf_drv_rtc_counter_clear(&rtc);                               //Clear the RTC counter to start count from zero
     }
 }
-
-/*static void lfclk_config(void)
-{
-    ret_code_t err_code = nrf_drv_clock_init();                        //Initialize the clock source specified in the nrf_drv_config.h file, i.e. the CLOCK_CONFIG_LF_SRC constant
-    APP_ERROR_CHECK(err_code);
-    nrf_drv_clock_lfclk_request(NULL);
-}*/
 
 static void rtc_config(void)
 {
@@ -810,46 +785,6 @@ static void ble_stack_init(void)
 
 }
 
-/**@brief Function for handling events from the BSP module.
- *
- * @param[in]   event   Event generated when button is pressed.
-
-static void bsp_event_handler(bsp_event_t event)
-{
-    ret_code_t err_code;
-
-    switch (event)
-    {
-        case BSP_EVENT_SLEEP:
-            //sleep_mode_enter();
-            break; // BSP_EVENT_SLEEP
-
-        case BSP_EVENT_DISCONNECT:
-            err_code = sd_ble_gap_disconnect(m_conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            if (err_code != NRF_ERROR_INVALID_STATE)
-            {
-                APP_ERROR_CHECK(err_code);
-            }
-            break; // BSP_EVENT_DISCONNECT
-
-        case BSP_EVENT_WHITELIST_OFF:
-            if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
-            {
-                err_code = ble_advertising_restart_without_whitelist(&m_advertising);
-                if (err_code != NRF_ERROR_INVALID_STATE)
-                {
-                    APP_ERROR_CHECK(err_code);
-                }
-            }
-            break; // BSP_EVENT_KEY_0
-
-        default:
-            break;
-    }
-}
- */
-
 /**@brief Function for initializing the Advertising functionality.
  */
 static void advertising_init(void)
@@ -876,26 +811,6 @@ static void advertising_init(void)
 
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
 }
-
-
-/**@brief Function for initializing buttons and leds.
- *
- * @param[out] p_erase_bonds  Will be true if the clear bonding button was pressed to wake the application up.
-
-static void buttons_leds_init(bool * p_erase_bonds)
-{
-    ret_code_t err_code;
-    bsp_event_t startup_event;
-
-    err_code = bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, bsp_event_handler);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = bsp_btn_ble_init(NULL, &startup_event);
-    APP_ERROR_CHECK(err_code);
-
-    *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
-}
- */
 
 /**@brief Function for initializing the nrf log module.
  */
@@ -957,9 +872,6 @@ int main(void)
     timers_init();
     //NRF_LOG_INFO("TIMERS");
     
-    //buttons_leds_init(&erase_bonds);
-    //NRF_LOG_INFO("BUTTONS");
-    
     power_management_init();
     //NRF_LOG_INFO("POWER");
     
@@ -987,11 +899,6 @@ int main(void)
     rtc_config();                                    // Configure RTC. The RTC will generate periodic interrupts. Requires 32kHz clock to operate.
     NRF_LOG_INFO("rtc");
     
-    application_timers_start();
-    NRF_LOG_INFO("application timers");
-
-    //advertising_start(erase_bonds);
-
     twi_init();
 
     MPU6050_sleep_mode();
