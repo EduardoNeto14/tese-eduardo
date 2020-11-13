@@ -41,24 +41,25 @@
 #define DEBUG
 #define APP_BLE_CONN_CFG_TAG		    1
 
-#define DEVICE_NAME                     "BRUXISMO"                       /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "EDUARDO"                   /**< Manufacturer. Will be passed to Device Information Service. */
+#define DEVICE_NAME                     "BRUXISM"                              /**< Name of device. Will be included in the advertising data. */
+#define MANUFACTURER_NAME               "EDUARDO"                               /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
 #define APP_ADV_DURATION                18000                                   /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
-#define SLAVE_LATENCY                   79                                       /**< Slave latency. */
-#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(32000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(15, UNIT_1_25_MS)         /**< Minimum acceptable connection interval (0.1 seconds). */
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(25, UNIT_1_25_MS)         /**< Maximum acceptable connection interval (0.2 second). */
+#define SLAVE_LATENCY                   450                                     /**< Slave latency. */
+#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(32000, UNIT_10_MS)        /**< Connection supervisory timeout (4 seconds). */
 
 #define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
-#define NOTIFICATION_INTERVAL           APP_TIMER_TICKS(1000)
+#define NOTIFICATION_INTERVAL           APP_TIMER_TICKS(500)
+#define NOTIFICATION_HIGH_RES           APP_TIMER_TICKS(50)
 
 #define SEC_PARAM_BOND                  1                                       /**< Perform bonding. */
 #define SEC_PARAM_MITM                  0                                       /**< Man In The Middle protection not required. */
@@ -74,17 +75,21 @@
 #define OPCODE_LENGTH			        1
 #define HANDLE_LENGTH			        2
 
-#define RTC_FREQUENCY                   32                                        //Determines the RTC frequency and prescaler
+#define RTC_FREQUENCY                   50                                        //Determines the RTC frequency and prescaler
 #define RTC_CC_VALUE                    8                                         //Determines the RTC interrupt frequency and thereby the SAADC sampling frequency
-#define SAADC_SAMPLE_INTERVAL_MS        150                                       //Interval in milliseconds at which RTC times out and triggers SAADC sample task (
+#define SAADC_SAMPLE_INTERVAL_MS        140                       //150           //Interval in milliseconds at which RTC times out and triggers SAADC sample task (
 #define SAADC_CALIBRATION_INTERVAL      5                                         //Determines how often the SAADC should be calibrated relative to NRF_DRV_SAADC_EVT_DONE event. E.g. value 5 will make the SAADC calibrate every fifth time the NRF_DRV_SAADC_EVT_DONE is received.
 #define SAADC_SAMPLES_IN_BUFFER         1                                         //Number of SAADC samples in RAM before returning a SAADC event. For low power SAADC set this constant to 1. Otherwise the EasyDMA will be enabled for an extended time which consumes high current.
 #define SAADC_OVERSAMPLE                NRF_SAADC_OVERSAMPLE_DISABLED             //Oversampling setting for the SAADC. Setting oversample to 4x This will make the SAADC output a single averaged value when the SAMPLE task is triggered 4 times. Enable BURST mode to make the SAADC sample 4 times when triggering SAMPLE task once.
 #define SAADC_BURST_MODE                0                                         //Set to 1 to enable BURST mode, otherwise set to 0.
 
 #define SAMPLE_BUFFER                   2                                         //Buffer length for SAADC samples
-#define PAGE_ADDR                       0x0007f000
-#define END_PAGE                        0x00080000
+
+// Low frequency clock source to be used by the SoftDevice
+/*define NRF_CLOCK_LFCLKSRC      {.source        = NRF_CLOCK_LF_SRC_RC,            \
+//                                 .rc_ctiv       = 16,                                \
+//                                 .rc_temp_ctiv  = 2,                                \
+/                                 .xtal_accuracy = NRF_CLOCK_LF_XTAL_ACCURACY_10_PPM}*/
 
 typedef enum {
     DEVICE_IS_ADVERTISING,              // Device is in advertising mode
@@ -94,6 +99,11 @@ typedef enum {
     DEVICE_IS_HOLDING                   // Device is in its Hold Status
 } device_status_t;
 
+typedef enum {
+        LOW_RES,
+        HIGH_RES
+} resolution_saadc;
+
 typedef struct saadc
 {
     bool m_saadc_initialized;
@@ -102,6 +112,7 @@ typedef struct saadc
     uint32_t m_adc_evt_counter;
     bool notification_enabled;
     bool stop_sending;
+    resolution_saadc resolution;
 } saadc_status_t;
 
 typedef enum {
@@ -119,7 +130,7 @@ typedef struct {
     bool hold;
 } mpu_status_t;
 
-static saadc_status_t          saadc_status  = {false, false, 20, 0, false, false};
+static saadc_status_t          saadc_status  = {false, false, 150, 0, false, false, LOW_RES};
 static device_status_t         device_status = DEVICE_IS_IDLE;
 static mpu_status_t            mpu_status = {MPU_SLEEP, false, false, false, MPU_SLEEP};
 
@@ -303,9 +314,23 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
             mpu_status.status_changed = true;
             
             mpu_status.stage = MPU_ACCEL_GYRO * (mpu_status.stage == MPU_GYRO) + MPU_ACCEL * (mpu_status.stage == MPU_SLEEP);   
-            err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
-            APP_ERROR_CHECK(err_code);
             
+            if (mpu_status.stage == MPU_ACCEL_GYRO) {
+                err_code = app_timer_stop(m_accel_notification);
+                APP_ERROR_CHECK(err_code);
+
+                err_code = app_timer_start(m_accel_notification, NOTIFICATION_HIGH_RES, NULL);
+                APP_ERROR_CHECK(err_code);
+                
+                err_code = app_timer_start(m_gyro_notification, NOTIFICATION_HIGH_RES, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
+            
+            else {
+                err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
+
             break;
         
         case BLE_BRUX_ACCEL_NOTIFICATION_DISABLED:
@@ -316,15 +341,36 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
             err_code = app_timer_stop(m_accel_notification);
             APP_ERROR_CHECK(err_code);
             
+            if (mpu_status.stage == MPU_GYRO) {
+                err_code = app_timer_stop(m_gyro_notification);
+                APP_ERROR_CHECK(err_code);
+
+                err_code = app_timer_start(m_gyro_notification, NOTIFICATION_INTERVAL, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
+
             break;
         
         case BLE_BRUX_GYRO_NOTIFICATION_ENABLED:
             mpu_status.status_changed = true;
             mpu_status.stage = MPU_ACCEL_GYRO * (mpu_status.stage == MPU_ACCEL) + MPU_GYRO * (mpu_status.stage == MPU_SLEEP);
             
-            err_code = app_timer_start(m_gyro_notification, NOTIFICATION_INTERVAL, NULL);
-            APP_ERROR_CHECK(err_code);
+            if (mpu_status.stage == MPU_ACCEL_GYRO) {
+                err_code = app_timer_stop(m_accel_notification);
+                APP_ERROR_CHECK(err_code);
+
+                err_code = app_timer_start(m_accel_notification, NOTIFICATION_HIGH_RES, NULL);
+                APP_ERROR_CHECK(err_code);
+                
+                err_code = app_timer_start(m_gyro_notification, NOTIFICATION_HIGH_RES, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
             
+            else {
+                err_code = app_timer_start(m_gyro_notification, NOTIFICATION_INTERVAL, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
+
             break;
         
         case BLE_BRUX_GYRO_NOTIFICATION_DISABLED:
@@ -335,6 +381,13 @@ static void on_brux_evt(ble_brux_t	* p_brux_service,
             err_code = app_timer_stop(m_gyro_notification);
             APP_ERROR_CHECK(err_code);
             
+            if (mpu_status.stage == MPU_ACCEL) {
+                err_code = app_timer_stop(m_accel_notification);
+                APP_ERROR_CHECK(err_code);
+
+                err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
+                APP_ERROR_CHECK(err_code);
+            }
             break;
 		
         case BLE_BRUX_FORCE_NOTIFICATION_ENABLED:
@@ -524,7 +577,7 @@ void saadc_init()
     channel_config.resistor_p = NRF_SAADC_RESISTOR_DISABLED;
     channel_config.resistor_n = NRF_SAADC_RESISTOR_DISABLED;
 
-    nrfx_saadc_limits_set(0, NRF_DRV_SAADC_LIMITL_DISABLED, 250);
+    nrfx_saadc_limits_set(0, NRF_DRV_SAADC_LIMITL_DISABLED, 750);
     err_code = nrfx_saadc_channel_init(0, &channel_config);
     APP_ERROR_CHECK(err_code);
 
@@ -573,13 +626,24 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
                 device_status = DEVICE_IS_STOPPING_ADV * (device_status == DEVICE_IS_ADVERTISING) + DEVICE_IS_HOLDING * (device_status == DEVICE_IS_CONNECTED); //Dantes, DEVICE_IS_CONNECTED * (...)
                 mpu_status.hold = true * (mpu_status.stage != MPU_SLEEP) + true * (mpu_status.hold);
                 saadc_status.stop_sending = true * (saadc_status.notification_enabled);
+
+                if (saadc_status.resolution == HIGH_RES) {
+                    saadc_status.resolution = LOW_RES;
+                    rtc_ticks = RTC_US_TO_TICKS(SAADC_SAMPLE_INTERVAL_MS*1000, RTC_FREQUENCY);
+                }
+
+                saadc_status.samples_not_exceeded = 150;
             }
-            else if (saadc_status.samples_not_exceeded)      {saadc_status.samples_not_exceeded--;}
+            else if (saadc_status.samples_not_exceeded && device_status != DEVICE_IS_HOLDING)      {saadc_status.samples_not_exceeded--;}
         }
         else if (saadc_status.limit_exceeded){
             NRF_LOG_INFO("Value: %d\n", sensor1);
             NRF_LOG_INFO("Value: %d\n", sensor2);
             
+            if (saadc_status.resolution == LOW_RES) {
+                saadc_status.resolution = HIGH_RES;
+                rtc_ticks = RTC_US_TO_TICKS(20*1000, RTC_FREQUENCY);
+            }
             if (device_status == DEVICE_IS_IDLE) {
                 bool erase_bonds;
                 advertising_start(erase_bonds);
@@ -589,7 +653,7 @@ void saadc_callback(nrf_drv_saadc_evt_t const *p_event)
                 device_status = DEVICE_IS_CONNECTED * (device_status == DEVICE_IS_HOLDING || device_status == DEVICE_IS_CONNECTED);        // If the the device_status = DEVICE_IS_ADVERTISING, it will remain like that. (DEVICE_IS_ADVERTISING = 0, as is the first element of the enum)
             }
             saadc_status.limit_exceeded = false;
-            saadc_status.samples_not_exceeded = 20;
+            saadc_status.samples_not_exceeded = 150;
         }
 
         nrf_drv_saadc_uninit();                                                                   // Uninitialize SAADC to disable EasyDMA and save power
@@ -743,12 +807,13 @@ static void ble_stack_init(void)
 
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
+
 }
 
 /**@brief Function for handling events from the BSP module.
  *
  * @param[in]   event   Event generated when button is pressed.
- */
+
 static void bsp_event_handler(bsp_event_t event)
 {
     ret_code_t err_code;
@@ -783,7 +848,7 @@ static void bsp_event_handler(bsp_event_t event)
             break;
     }
 }
-
+ */
 
 /**@brief Function for initializing the Advertising functionality.
  */
@@ -816,7 +881,7 @@ static void advertising_init(void)
 /**@brief Function for initializing buttons and leds.
  *
  * @param[out] p_erase_bonds  Will be true if the clear bonding button was pressed to wake the application up.
- */
+
 static void buttons_leds_init(bool * p_erase_bonds)
 {
     ret_code_t err_code;
@@ -830,7 +895,7 @@ static void buttons_leds_init(bool * p_erase_bonds)
 
     *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 }
-
+ */
 
 /**@brief Function for initializing the nrf log module.
  */
@@ -881,7 +946,7 @@ static void advertising_start(bool erase_bonds)
 int main(void)
 {
     ret_code_t err_code;
-    bool erase_bonds;
+    //bool erase_bonds;
     /*  Utiliza o regulador DC/DC interno (melhor consumo energético) */
     NRF_POWER->DCDCEN = 1;
 
@@ -892,7 +957,7 @@ int main(void)
     timers_init();
     //NRF_LOG_INFO("TIMERS");
     
-    buttons_leds_init(&erase_bonds);
+    //buttons_leds_init(&erase_bonds);
     //NRF_LOG_INFO("BUTTONS");
     
     power_management_init();
@@ -947,12 +1012,13 @@ int main(void)
                 case MPU_SLEEP:
                     MPU6050_sleep_mode();
                     
-                    err_code = app_timer_stop(m_accel_notification);
+                    err_code = app_timer_stop(m_accel_notification);    //acho que não necessito disto
                     APP_ERROR_CHECK(err_code);
                     
-                    err_code = app_timer_stop(m_gyro_notification);
+                    err_code = app_timer_stop(m_gyro_notification);     //acho que não necessito disto
                     APP_ERROR_CHECK(err_code);
                     break;
+
                 case MPU_ACCEL:
                     MPU6050_accelerometer();
 
@@ -978,10 +1044,10 @@ int main(void)
                     MPU6050_accel_and_gyro();
                     
                     if (mpu_status.hold) {
-                        err_code = app_timer_start(m_accel_notification, NOTIFICATION_INTERVAL, NULL);
+                        err_code = app_timer_start(m_accel_notification, NOTIFICATION_HIGH_RES, NULL);
                         APP_ERROR_CHECK(err_code);
 
-                        err_code = app_timer_start(m_gyro_notification, NOTIFICATION_INTERVAL, NULL);
+                        err_code = app_timer_start(m_gyro_notification, NOTIFICATION_HIGH_RES, NULL);
                         APP_ERROR_CHECK(err_code);
 
                         mpu_status.hold = false;

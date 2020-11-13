@@ -8,7 +8,6 @@
 
 static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init);
 static uint32_t bruxism_gyro_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init);
-static uint32_t bruxism_battery_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init);
 static uint32_t bruxism_accel_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init);
 static void on_connect(ble_brux_t * p_brux, ble_evt_t const * p_ble_evt);
 static void on_disconnect(ble_brux_t * p_brux, ble_evt_t const * p_ble_evt);
@@ -50,11 +49,7 @@ uint32_t ble_brux_init(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
 	if(err_code != NRF_SUCCESS)
 		return err_code;
 	
-	err_code = bruxism_gyro_char_add(p_brux, p_brux_init);
-	if(err_code != NRF_SUCCESS)
-		return err_code;
-	
-	return bruxism_battery_char_add(p_brux, p_brux_init);
+	return bruxism_gyro_char_add(p_brux, p_brux_init);
 }
 
 static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
@@ -239,69 +234,6 @@ static uint32_t bruxism_gyro_char_add(ble_brux_t * p_brux, const ble_brux_init_t
 	attr_char_value.p_value		= value;
 
 	err_code = sd_ble_gatts_characteristic_add(p_brux->service_handler, &char_md, &attr_char_value, &p_brux->brux_gyro_handles);
-
-	if (err_code != NRF_SUCCESS)
-		return err_code;
-
-	return NRF_SUCCESS;	
-}
-
-static uint32_t bruxism_battery_char_add(ble_brux_t * p_brux, const ble_brux_init_t * p_brux_init)
-{
-	uint32_t		err_code;
-	ble_gatts_char_md_t	char_md;
-	ble_gatts_attr_md_t	cccd_md;
-	ble_gatts_attr_t	attr_char_value;
-	ble_uuid_t		ble_uuid;
-	ble_gatts_attr_md_t	attr_md;
-	
-	memset(&cccd_md, 0, sizeof(cccd_md));
-	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
-
-	cccd_md.write_perm = p_brux_init->custom_value_char_attr_md.cccd_write_perm;
-    	cccd_md.vloc       = BLE_GATTS_VLOC_STACK;
-	
-	memset(&char_md, 0, sizeof(char_md));
-
-	char_md.char_props.read 	= 1;
-	char_md.char_props.write	= 0;
-	char_md.char_props.notify	= 1;
-	
-	static char user_desc[]         = "BATTERY VALUE";
-
-	char_md.p_char_user_desc        = (uint8_t *) user_desc;
-	char_md.char_user_desc_size     = strlen(user_desc);
-	char_md.char_user_desc_max_size = strlen(user_desc);
-	
-	char_md.p_char_pf		= NULL;
-	char_md.p_user_desc_md		= NULL;
-	char_md.p_cccd_md		= &cccd_md;
-	char_md.p_sccd_md		= NULL;
-
-	memset(&attr_md, 0, sizeof(attr_md));
-
-	attr_md.read_perm	= p_brux_init->custom_value_char_attr_md.read_perm;
-	attr_md.write_perm	= p_brux_init->custom_value_char_attr_md.write_perm;
-	attr_md.vloc		= BLE_GATTS_VLOC_STACK;
-	attr_md.rd_auth		= 0;
-	attr_md.wr_auth		= 0;
-	attr_md.vlen		= 0;
-
-	ble_uuid.type		= p_brux->uuid_type;
-	ble_uuid.uuid		= BRUX_BATTERY_UUID;
-
-	memset(&attr_char_value, 0, sizeof(attr_char_value));
-
-	attr_char_value.p_uuid		= &ble_uuid;
-	attr_char_value.p_attr_md	= &attr_md;
-	attr_char_value.init_len	= sizeof(uint8_t);
-	attr_char_value.init_offs	= 0;
-	attr_char_value.max_len		= sizeof(uint8_t);
-	uint16_t value			= 100;
-	attr_char_value.p_value		= (uint8_t *) &value;
-
-	err_code = sd_ble_gatts_characteristic_add(p_brux->service_handler, &char_md, &attr_char_value, &p_brux->brux_battery_handles);
 
 	if (err_code != NRF_SUCCESS)
 		return err_code;
@@ -557,59 +489,6 @@ uint32_t ble_brux_gyro_update(ble_brux_t * p_brux, uint8_t * gyro_values)
         memset(&hvx_params, 0, sizeof(hvx_params));
 
         hvx_params.handle = p_brux->brux_gyro_handles.value_handle;
-        hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
-        hvx_params.offset = gatts_value.offset;
-        hvx_params.p_len  = &gatts_value.len;
-        hvx_params.p_data = gatts_value.p_value;
-
-        err_code = sd_ble_gatts_hvx(p_brux->conn_handle, &hvx_params);
-        NRF_LOG_INFO("sd_ble_gatts_hvx result: %x. \r\n", err_code);
-    }
-    else
-    {
-        err_code = NRF_ERROR_INVALID_STATE;
-        NRF_LOG_INFO("sd_ble_gatts_hvx result: NRF_ERROR_INVALID_STATE. \r\n");
-    }
-
-
-    return err_code;
-}
-
-uint32_t ble_brux_battery_update(ble_brux_t * p_brux, uint8_t battery_value)
-{
-    NRF_LOG_INFO("In ble_brux_force_update. \r\n");
-    if (p_brux == NULL)
-    {
-        return NRF_ERROR_NULL;
-    }
-
-    uint32_t err_code = NRF_SUCCESS;
-    ble_gatts_value_t gatts_value;
-
-    // Initialize value struct.
-    memset(&gatts_value, 0, sizeof(gatts_value));
-
-    gatts_value.len     = sizeof(uint8_t);
-    gatts_value.offset  = 0;
-    gatts_value.p_value = (uint8_t *) &battery_value;
-
-    // Update database.
-    err_code = sd_ble_gatts_value_set(p_brux->conn_handle,
-                                      p_brux->brux_battery_handles.value_handle,
-                                      &gatts_value);
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
-
-    // Send value if connected and notifying.
-    if ((p_brux->conn_handle != BLE_CONN_HANDLE_INVALID))
-    {
-        ble_gatts_hvx_params_t hvx_params;
-
-        memset(&hvx_params, 0, sizeof(hvx_params));
-
-        hvx_params.handle = p_brux->brux_battery_handles.value_handle;
         hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
         hvx_params.offset = gatts_value.offset;
         hvx_params.p_len  = &gatts_value.len;

@@ -12,9 +12,7 @@
 #define BRUX_FORCE_UUID		0x1111
 #define BRUX_ACCEL_UUID		0x2222
 #define BRUX_GYRO_UUID		0x3333
-#define BRUX_BATTERY_UUID	0x5555
 
-#define BRUX_TEMP_UUID		0x4444
 /**@brief Custom Service structure. This contains various status information for the service. */
 
 #ifndef BLE_BRUX_BLE_OBSERVER_PRIO
@@ -36,8 +34,6 @@ typedef enum
     BLE_BRUX_GYRO_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
 	BLE_BRUX_FORCE_NOTIFICATION_ENABLED,                             /**< Custom value notification enabled event. */
     BLE_BRUX_FORCE_NOTIFICATION_DISABLED,                             /**< Custom value notification disabled event. */
-    //BLE_BRUX_EVT_DISCONNECTED,
-    //BLE_BRUX_EVT_CONNECTED
 } ble_brux_evt_type_t;
 
 typedef struct
@@ -62,7 +58,6 @@ struct  ble_brux_s
 	ble_gatts_char_handles_t	brux_force_handles;
 	ble_gatts_char_handles_t	brux_accel_handles;
 	ble_gatts_char_handles_t	brux_gyro_handles;
-	ble_gatts_char_handles_t	brux_battery_handles;
 	uint16_t					conn_handle;
 	uint8_t						uuid_type;
 };

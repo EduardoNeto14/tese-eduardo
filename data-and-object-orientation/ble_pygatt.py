@@ -6,6 +6,8 @@ import ctypes as ct
 from math import sqrt, atan, degrees, atan2
 import signal
 import sys
+import time
+import csv
 
 from constants import *
 from orientation import *
@@ -16,17 +18,28 @@ ADDRESS_TYPE = pygatt.BLEAddressType.random
 device = None
 adapter = None
 
+i = 0
+
 def force_handler(handle, value):
-    print(f"Force -> 1: ({ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[0:2])) + ''.join(reversed(value.hex()[2:4])))), 2)}), 2: ({ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[4:6])) + ''.join(reversed(value.hex()[6:8])))), 2)})")
+    global i
+    i+=1
+
+    f1_val = ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[0:2])) + ''.join(reversed(value.hex()[2:4])))), 2)
+    f2_val = ComplementaryFilter.twos_comp(''.join(reversed(''.join(reversed(value.hex()[4:6])) + ''.join(reversed(value.hex()[6:8])))), 2)
+    print(f"Force {i}-> 1: ({f1_val}), 2: ({f2_val})")
+    
+    with open("data/force_another.csv", "a") as f2:
+        f2 = csv.writer(f2, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        f2.writerow([f'{time.time()}', f'{f1_val}', f'{f2_val}'])
 
 async def signal_handler(sig, frame):
     global adapter
     global device
 
     print("\nCatched CTRL-C\n")
-    #await device.unsubscribe(ACCEL_UUID)
-    await device.unsubscribe(FORCE_UUID)
-    #device.unsubscribe(GYRO_UUID)
+    await device.unsubscribe(ACCEL_UUID)
+    await device.unsubscribe(GYRO_UUID)
+    #await device.unsubscribe(FORCE_UUID)
     await adapter.stop()
     sys.exit(0)
 
@@ -40,7 +53,7 @@ async def discover():
     global MAC_ADDRESS
 
     for d in devices:
-        if d.name == "BRUXISMO":
+        if d.name == "BRUXISM":
             MAC_ADDRESS = d.address
             print(f"        {bcolors.BOLD} DEVICE FOUND {bcolors.END} -> {bcolors.OKGREEN}{bcolors.BOLD}{MAC_ADDRESS}{bcolors.END}\n")
 
@@ -53,7 +66,7 @@ def main():
     global adapter
     global device
 
-    filter = ComplementaryFilter(False)
+    filter = ComplementaryFilter()
     signal.signal(signal.SIGINT, signal_handler)
     
     if MAC_ADDRESS != None:
@@ -69,9 +82,11 @@ def main():
                     print(f"    {bcolors.BOLD}{bcolors.OKGREEN} UUID {bcolors.END} -> {bcolors.BOLD}{bcolors.OKBLUE}{uuid}{bcolors.END}\n")
                     print(f"    {bcolors.BOLD}{bcolors.OKGREEN} VALUE {bcolors.END} -> {bcolors.BOLD}{bcolors.OKBLUE}{binascii.hexlify(device.char_read(uuid))}{bcolors.END}\n")
         
-            device.subscribe(FORCE_UUID, callback=force_handler)
-            #device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
-            #device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
+            
+            device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
+            device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
+            #device.subscribe(FORCE_UUID, callback=force_handler)
+            
             
             loop = asyncio.get_event_loop()
             loop.run_until_complete(signal.pause())

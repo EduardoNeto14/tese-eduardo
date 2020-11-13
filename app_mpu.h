@@ -82,7 +82,7 @@ void MPU6050_accelerometer() {
     m_xfer_done = false;
 
     reg[0] = MPU_PWR_MGMT_2;
-    reg[1] = MPU_PWR2_STBY_GYRO;
+    reg[1] = 0x47;
     NRF_LOG_INFO("PWR2\r\n");
     err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
     APP_ERROR_CHECK(err_code);
@@ -234,53 +234,3 @@ static void MPU6050_read_gyro()
     
     while(m_xfer_done == false);
 }
-
-
-/**
- * @brief Function for reading data from MPU.
- 
-void read_sensor_data()
-{
-    ret_code_t err_code;
-    m_xfer_done = false;
-
-    MPU6050_read_accel();    
-    
-    m_xfer_done = false;
-    
-    MPU6050_read_gyro();    
-    err_code = nrf_drv_twi_rx(&m_twi, MPU_I2C_ADDRESS, &m_sample[0], sizeof(m_sample));
-    APP_ERROR_CHECK(err_code);
-
-    while(m_xfer_done == false);
-    #ifdef DEBUG
-    SEGGER_RTT_WriteString(0, "NICE\n");
-    #endif
-}
-
-void MPU6050_set_mode(void)
-{
-    ret_code_t err_code;
-
-    uint8_t reg[2] = {MPU_PWR_MGMT_1, MPU_POWER_CYCLE};
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
-    APP_ERROR_CHECK(err_code);
-    while (m_xfer_done == false);
-
-    // Writing to pointer byte. 
-    reg[0] = MPU_GYRO_CFG_REG;
-    reg[1] =  MPU_GYRO_CFG_250DEG;
-    m_xfer_done = false;
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
-    APP_ERROR_CHECK(err_code);
-    while (m_xfer_done == false);
-
-    reg[0] = MPU_ACCEL_CFG_REG;
-    reg[1] =  MPU_ACCEL_CFG_2G;
-    m_xfer_done = false;
-    err_code = nrf_drv_twi_tx(&m_twi, MPU_I2C_ADDRESS, reg, sizeof(reg), false);
-    APP_ERROR_CHECK(err_code);
-    while (m_xfer_done == false);
-}
-
-*/
