@@ -12,7 +12,7 @@ class ComplementaryFilter:
     T_LOW_RES = 0.5
     T_HIGH_RES = 0.05
 
-    def __init__(self, gyro = True, alfa = 0.95):
+    def __init__(self, gyro = False, alfa = 0.75):
         self.gyro_enabled = gyro
         self.alfa = alfa
         self.accel_enabled = False
@@ -97,8 +97,8 @@ class ComplementaryFilter:
         gyro_y = self.twos_comp(value.hex()[4:8], 2) / MPU_GYRO_READINGSCALE_250DEG - 2.15
         gyro_z = self.twos_comp(value.hex()[8:12], 2) / MPU_GYRO_READINGSCALE_250DEG + 0.12
         
-        self.pitch_gyro = gyro_y*(self.T_HIGH_RES if self.accel_enabled else self.T_LOW_RES) + self.prev_pitch
-        self.roll_gyro = gyro_x*(self.T_HIGH_RES if self.accel_enabled else self.T_LOW_RES) + self.prev_roll
+        self.pitch_gyro = gyro_x*(self.T_HIGH_RES if self.accel_enabled else self.T_LOW_RES) + self.prev_pitch
+        self.roll_gyro = gyro_y*(self.T_HIGH_RES if self.accel_enabled else self.T_LOW_RES) + self.prev_roll
         self.yaw_gyro = gyro_z*(self.T_HIGH_RES if self.accel_enabled else self.T_LOW_RES) + self.prev_yaw
 
         self.pitch = (1 - self.alfa) * self.pitch_accel + self.alfa * self.pitch_gyro
@@ -131,7 +131,7 @@ class ComplementaryFilter:
                 self.position = "Fowler's"
                 print("Position -> Fowler's")
             
-            elif self.pitch < -35:
+            elif self.pitch < -25:
                 self.position = "Trendelenberg"
                 print("Position -> Trendelenberg")
 
@@ -148,7 +148,7 @@ class ComplementaryFilter:
                 gyro = csv.writer(gyro, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 gyro.writerow([f'{time.time()}', f'{gyro_x}', f'{gyro_y}', f'{gyro_z}'])
 
-        print(f"IMU -> X: ({round(self.pitch, 2)}º, Y: ({round(self.roll, 2)}))º, Z: ({round(self.yaw_gyro, 2)})º")
+        print(f"IMU -> Pitch: ({round(self.pitch, 2)}º, Roll: ({round(self.roll, 2)}))º")
 
     @staticmethod
     def twos_comp(val, n_bytes):

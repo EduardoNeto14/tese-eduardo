@@ -8,6 +8,8 @@ import signal
 import sys
 import time
 import csv
+import keyboard
+from threading import Thread
 
 from constants import *
 from orientation import *
@@ -15,8 +17,12 @@ from orientation import *
 MAC_ADDRESS = None
 ADDRESS_TYPE = pygatt.BLEAddressType.random
 
-device = None
+#device = None
 adapter = None
+
+filter = ComplementaryFilter()
+
+force = False
 
 i = 0
 
@@ -32,17 +38,6 @@ def force_handler(handle, value):
         f2 = csv.writer(f2, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         f2.writerow([f'{time.time()}', f'{f1_val}', f'{f2_val}'])
 
-async def signal_handler(sig, frame):
-    global adapter
-    global device
-
-    print("\nCatched CTRL-C\n")
-    await device.unsubscribe(ACCEL_UUID)
-    await device.unsubscribe(GYRO_UUID)
-    #await device.unsubscribe(FORCE_UUID)
-    await adapter.stop()
-    sys.exit(0)
-
 async def discover():
     scanner = BleakScanner()
     await scanner.start()
@@ -57,18 +52,13 @@ async def discover():
             MAC_ADDRESS = d.address
             print(f"        {bcolors.BOLD} DEVICE FOUND {bcolors.END} -> {bcolors.OKGREEN}{bcolors.BOLD}{MAC_ADDRESS}{bcolors.END}\n")
 
-
 def main():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(discover())
     
     global MAC_ADDRESS
     global adapter
-    global device
 
-    filter = ComplementaryFilter()
-    signal.signal(signal.SIGINT, signal_handler)
-    
     if MAC_ADDRESS != None:
         adapter = pygatt.GATTToolBackend()
         try:
@@ -83,16 +73,67 @@ def main():
                     print(f"    {bcolors.BOLD}{bcolors.OKGREEN} VALUE {bcolors.END} -> {bcolors.BOLD}{bcolors.OKBLUE}{binascii.hexlify(device.char_read(uuid))}{bcolors.END}\n")
         
             
-            device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
-            device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
+            #device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
+            #device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
             #device.subscribe(FORCE_UUID, callback=force_handler)
-            
-            
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(signal.pause())
+            asyncio.run(detect_key_press(device))
+            #x = asyncio.new_event_loop()
+            #asyncio.set_event_loop(x)
+            #asyncio.ensure_future(detect_key_press(x))
+            #x.run_forever()
 
         except Exception as e:
             print(e)
+
+async def detect_key_press(device):
+    global force
+    global filter
+    print(device)
+
+    while True:
+        if keyboard.is_pressed("f"):
+            if not force:
+                print("Ativar Força")
+                force = True
+                
+                #asyncio.create_task(force_enabled(device))
+                device.subscribe(FORCE_UUID, callback=force_handler)
+        
+            else:
+                print("Desativar Força")
+                force = False
+                #asyncio.create_task(force_disabled(device))
+                device.unsubscribe(FORCE_UUID)
+        
+        if keyboard.is_pressed("a"):
+            if not filter.accel_enabled:
+                print("Ativar Acelerómetro")
+                filter.accel_enabled = True
+
+                device.subscribe(ACCEL_UUID, callback=filter.accel_handler)
+                
+            else:
+                print("Desativar Acelerómetro")
+                filter.accel_enabled = False
+                
+                device.unsubscribe(ACCEL_UUID)
+
+        if keyboard.is_pressed("g"):
+            if not filter.gyro_enabled:
+                print("Ativar Giroscópio")
+                filter.gyro_enabled = True
+                device.subscribe(GYRO_UUID, callback=filter.gyro_handler)
+
+            else:
+                print("Desativar Giroscópio")
+                filter.gyro_enabled = False
+                device.unsubscribe(GYRO_UUID)
+
+def force_enabled(device):
+    device.subscribe(FORCE_UUID, callback=force_handler)
+
+def force_disabled(device):
+    device.unsubscribe(FORCE_UUID)
 
 if __name__ == "__main__":
     main()

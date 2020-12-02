@@ -71,7 +71,7 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	memset(&char_md, 0, sizeof(char_md));
 
 	char_md.char_props.read 			= 1;
-	char_md.char_props.write_wo_resp	= 1;
+	//char_md.char_props.write_wo_resp	= 1;
 	char_md.char_props.notify			= 1;
 	
 	static char user_desc[]         = "FORCE VALUE";
@@ -88,7 +88,7 @@ static uint32_t bruxism_force_char_add(ble_brux_t * p_brux, const ble_brux_init_
 	memset(&attr_md, 0, sizeof(attr_md));
 
 	attr_md.read_perm	= p_brux_init->custom_value_char_attr_md.read_perm;
-	attr_md.write_perm	= p_brux_init->custom_value_char_attr_md.write_perm;
+	//attr_md.write_perm	= p_brux_init->custom_value_char_attr_md.write_perm;
 	attr_md.vloc		= BLE_GATTS_VLOC_STACK;
 	attr_md.rd_auth		= 0;
 	attr_md.wr_auth		= 0;
